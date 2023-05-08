@@ -78,6 +78,7 @@ func (s *Server) Register(parent context.Context, dto *pb.RegisterRequest) (*pb.
 		return nil, status.Error(codes.Internal, "Error while hashing password")
 	}
 
+
 	user := model.User{
 		Id:            primitive.NewObjectID(),
 		Username:      dto.Username,

@@ -3,3 +3,4 @@ gen:
 	@protoc --go_out=./api_gateway  --go-grpc_out=./api_gateway ./proto/${service}.proto
 
 	@echo "generate ${service} done"
+

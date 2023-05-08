@@ -80,7 +80,6 @@ export default function AuthProvider(props: AuthProviderProps) {
 
     const isLoading = useDebounce(isLoadingUser || isLoadingToken, 100);
     useEffect(() => {
-        console.log(status);
         if (status === "error") {
             logout();
         }

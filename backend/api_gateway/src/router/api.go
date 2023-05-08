@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"api.accommodation.com/src/client"
+	"api.accommodation.com/src/handler/accommodation"
 	"api.accommodation.com/src/handler/auth"
 	"api.accommodation.com/src/middleware"
 	"github.com/gin-gonic/gin"
@@ -28,4 +29,12 @@ func ApiRouter(r *gin.RouterGroup, clients *client.Clients) {
 	authGroup.GET("/auth", func(ctx *gin.Context) {
 		auth.MeAuthHandler(ctx, clients)
 	})
+
+	hostGroup := authGroup.Group("/")
+	hostGroup.Use(middleware.HasRole([]string{"H"}))
+
+	hostGroup.POST("/accommodation", func(ctx *gin.Context) {
+		accommodation.CreateAccommodationHandler(ctx, clients)
+	})
+
 }

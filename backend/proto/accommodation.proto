@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package accommodation;
+
+import "google/protobuf/timestamp.proto";
+option go_package = "./pb";
+
+message Accommodation {
+  string id = 1;
+  string name = 2;
+  string location = 3;
+  repeated Amenity amenity = 4;
+  repeated string photo_url = 5;
+  int32 max_guests = 6;
+  int32 min_guests = 7;
+  double default_price = 8;
+  string user_id = 9;
+}
+
+message UnavailableInterval {
+  google.protobuf.Timestamp start_date = 1;
+  google.protobuf.Timestamp end_date = 2;
+}
+
+message Price {
+  google.protobuf.Timestamp start_date = 1;
+  google.protobuf.Timestamp end_date = 2;
+  double price_per_night = 3;
+}
+
+enum Amenity {
+  WIFI = 0;
+  KITCHEN = 1;
+  AIR_CONDITIONING = 2;
+  PARKING = 3;
+}
+
+//repeated UnavailableInterval availability = 8;
+//repeated Price price = 9;
+
+message AccommodationList {
+  repeated Accommodation accommodation = 1;
+}
+
+service AccommodationService {
+  rpc GetAccommodation(GetAccommodationRequest) returns (GetAccommodationResponse);
+  rpc AddAccommodation(AddAccommodationRequest) returns (AddAccommodationResponse);
+  rpc UpdateAvailability(UpdateAvailabilityRequest) returns (UpdateAvailabilityResponse);
+  rpc UpdatePrice(UpdatePriceRequest) returns (UpdatePriceResponse);
+  rpc SearchAccommodations(SearchRequest) returns (AccommodationList);
+}
+
+
+message GetAccommodationRequest {
+  string id = 1;
+}
+
+message DatePrice {
+  google.protobuf.Timestamp date = 1;
+  double price = 2;
+}
+
+message GetAccommodationResponse {
+  Accommodation accomodation = 1;
+  repeated google.protobuf.Timestamp unavailable_dates = 2;
+  repeated DatePrice date_price = 3;
+}
+
+message AddAccommodationRequest {
+  string name = 2;
+  string location = 3;
+  repeated Amenity amenity = 4;
+  repeated string photo_url = 5;
+  int32 max_guests = 6;
+  int32 min_guests = 7;
+  double default_price = 8;
+}
+
+message AddAccommodationResponse {
+  bool success = 1;
+}
+
+message UpdateAvailabilityRequest {
+  string id = 1;
+  UnavailableInterval availability = 2;
+}
+
+message UpdateAvailabilityResponse {
+  bool success = 1;
+}
+
+message UpdatePriceRequest {
+  string id = 1;
+  Price price = 2;
+}
+
+message UpdatePriceResponse {
+  bool success = 1;
+}
+
+
+message SearchRequest {
+  string location = 1;
+  int32 num_guests = 2;
+  string start_date = 3;
+  string end_date = 4;
+}

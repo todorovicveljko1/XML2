@@ -5,6 +5,7 @@ import "os"
 type Config struct {
 	Address     string
 	AuthAddress string
+	AccAddress  string
 }
 
 func getOsValueOrDefault(key string, defaultValue string) string {
@@ -19,5 +20,6 @@ func GetConfig() Config {
 	return Config{
 		Address:     getOsValueOrDefault("API_ADDRESS", "localhost:8000"),
 		AuthAddress: getOsValueOrDefault("AUTH_ADDRESS", "localhost:8001"),
+		AccAddress:  getOsValueOrDefault("ACC_ADDRESS", "localhost:8002"),
 	}
 }
