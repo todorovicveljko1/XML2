@@ -1,0 +1,36 @@
+syntax = "proto3";
+option go_package = "./pb";
+
+import "google/protobuf/timestamp.proto";
+
+message Reservation{
+    string id = 1;
+    string user_id = 2;
+    string accommodation_id = 3;
+    google.protobuf.Timestamp start_date = 4;
+    google.protobuf.Timestamp end_date = 5;
+    double price = 6;
+    string status = 7;
+}
+
+service ReservationService{
+    rpc GetReservation(GetReservationRequest) returns (Reservation);
+    rpc CreateReservation(CreateReservationRequest) returns (Reservation);
+    rpc ApproveReservation(GetReservationRequest) returns (Reservation);
+    rpc RejectReservation(GetReservationRequest) returns (Reservation);
+    rpc CancelReservation(GetReservationRequest) returns (Reservation);
+}
+
+message GetReservationRequest{
+    string reservation_id = 1;
+}
+
+message CreateReservationRequest{
+    string user_id = 1;
+    string accommodation_id = 2;
+    google.protobuf.Timestamp start_date = 3;
+    google.protobuf.Timestamp end_date = 4;
+    double price = 5;
+}
+
+

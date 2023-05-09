@@ -12,11 +12,13 @@ import (
 type Connections struct {
 	authConn *grpc.ClientConn
 	accConn  *grpc.ClientConn
+	resConn  *grpc.ClientConn
 }
 
 func (c *Connections) Close() {
 	c.authConn.Close()
 	c.accConn.Close()
+	c.resConn.Close()
 }
 
 type Clients struct {
@@ -24,6 +26,7 @@ type Clients struct {
 
 	AuthClient          pb.AuthClient
 	AccommodationClient pb.AccommodationServiceClient
+	ReservationClient   pb.ReservationServiceClient
 }
 
 func InitClients(cfg *config.Config) *Clients {
@@ -39,13 +42,21 @@ func InitClients(cfg *config.Config) *Clients {
 		panic(err)
 	}
 
+	resConn, err := grpc.Dial(cfg.ResAddress, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Println("Can't connect to reservation servise")
+		panic(err)
+	}
+
 	return &Clients{
 		connections: &Connections{
 			authConn: authConn,
 			accConn:  accConn,
+			resConn:  resConn,
 		},
 		AuthClient:          AuthGRPCClient(authConn),
 		AccommodationClient: AccommodationGRPCClient(accConn),
+		ReservationClient:   ReservationGRPCClient(resConn),
 	}
 }
 

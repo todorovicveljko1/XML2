@@ -1,0 +1,62 @@
+package src
+
+import (
+	"context"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"reservation.accommodation.com/config"
+	"reservation.accommodation.com/pb"
+	"reservation.accommodation.com/src/db"
+)
+
+type Server struct {
+	pb.UnimplementedReservationServiceServer
+
+	cfg *config.Config
+
+	res_collection *mongo.Collection
+
+	dbClient *mongo.Client
+}
+
+func NewServer(cfg *config.Config) (*Server, error) {
+	client, _ := db.DbInit(cfg)
+
+	res_collection := client.Database("accommodation_res").Collection("reservation")
+
+	return &Server{cfg: cfg, dbClient: client, res_collection: res_collection}, nil
+}
+
+func (s *Server) Stop() {
+	if err := s.dbClient.Disconnect(context.Background()); err != nil {
+		panic(err)
+	}
+}
+
+func (s *Server) GetReservation(context.Context, *pb.GetReservationRequest) (*pb.Reservation, error) {
+	return &pb.Reservation{
+		Id:              "1",
+		UserId:          "1",
+		AccommodationId: "1",
+		StartDate:       timestamppb.Now(),
+		EndDate:         timestamppb.Now(),
+		Status:          "CREATED",
+		Price:           1000,
+	}, nil
+	//return nil, status.Errorf(codes.Unimplemented, "method GetReservation not implemented")
+}
+func (s *Server) CreateReservation(context.Context, *pb.CreateReservationRequest) (*pb.Reservation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateReservation not implemented")
+}
+func (s *Server) ApproveReservation(context.Context, *pb.GetReservationRequest) (*pb.Reservation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApproveReservation not implemented")
+}
+func (s *Server) RejectReservation(context.Context, *pb.GetReservationRequest) (*pb.Reservation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RejectReservation not implemented")
+}
+func (s *Server) CancelReservation(context.Context, *pb.GetReservationRequest) (*pb.Reservation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelReservation not implemented")
+}
