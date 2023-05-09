@@ -1,42 +1,35 @@
 import axios from "@/axios";
 import MainLayout from "@/components/Layout/MainLayout";
-import { AuthWraper, GuestWraper } from "@/providers/authProvider";
-import { useToken } from "@/providers/tokenProvider";
+import { GuestWraper } from "@/providers/authProvider";
 import { RegisterDto } from "@/types/user";
 import { LoadingButton } from "@mui/lab";
-import {
-    Alert,
-    Container,
-    FormControl,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    Stack,
-    TextField,
-    Typography,
-} from "@mui/material";
+import { Alert, Container, Paper, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import { useSnackbar } from "notistack";
-import { use, useState } from "react";
+import { TextFieldElement, SelectElement, useForm } from "react-hook-form-mui";
 import { useMutation } from "react-query";
 
 // role options for G as Guest and H as Host
 const ROLE_OPTIONS = [
-    { value: "G", label: "Guest" },
-    { value: "H", label: "Host" },
+    { id: "G", label: "Guest" },
+    { id: "H", label: "Host" },
 ];
 
 function Register() {
     const router = useRouter();
     const { enqueueSnackbar, closeSnackbar } = useSnackbar();
-    const [username, setUsername] = useState("");
-    const [firstName, setFirstName] = useState("");
-    const [lastName, setLastName] = useState("");
-    const [placeOfLiving, setPlaceOfLiving] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [role, setRole] = useState("G");
+    const { control, handleSubmit, formState } = useForm({
+        defaultValues: {
+            username: "",
+            password: "",
+            first_name: "",
+            last_name: "",
+            email: "",
+            place_of_living: "",
+            role: "",
+        },
+    });
+
     const mutation = useMutation(
         (data: RegisterDto) => {
             return axios.post("/auth/register", data);
@@ -60,7 +53,9 @@ function Register() {
             },
         }
     );
-
+    const submit = handleSubmit((data) => {
+        mutation.mutate(data);
+    });
     return (
         <MainLayout>
             <GuestWraper>
@@ -75,112 +70,54 @@ function Register() {
                             >
                                 Register
                             </Typography>
-                            <TextField
-                                error={mutation.isError}
-                                label="Username:"
+                            <TextFieldElement
+                                control={control}
+                                name="username"
+                                label="Username"
                                 required
-                                fullWidth
-                                value={username}
-                                onChange={(e) => {
-                                    mutation.isError && mutation.reset();
-                                    setUsername(e.target.value);
-                                }}
-                            />{" "}
-                            <TextField
-                                error={mutation.isError}
-                                label="First name:"
-                                required
-                                fullWidth
-                                value={firstName}
-                                onChange={(e) => {
-                                    mutation.isError && mutation.reset();
-                                    setFirstName(e.target.value);
-                                }}
                             />
-                            <TextField
-                                error={mutation.isError}
-                                label="Last name:"
-                                required
-                                fullWidth
-                                value={lastName}
-                                onChange={(e) => {
-                                    mutation.isError && mutation.reset();
-                                    setLastName(e.target.value);
-                                }}
-                            />
-                            <TextField
-                                error={mutation.isError}
-                                label="Email:"
-                                required
-                                fullWidth
-                                value={email}
-                                onChange={(e) => {
-                                    mutation.isError && mutation.reset();
-                                    setEmail(e.target.value);
-                                }}
-                            />
-                            <TextField
-                                error={mutation.isError}
-                                label="Password:"
+                            <TextFieldElement
+                                control={control}
+                                name="password"
+                                label="Password"
                                 type="password"
                                 required
-                                fullWidth
-                                value={password}
-                                onChange={(e) => {
-                                    mutation.isError && mutation.reset();
-                                    setPassword(e.target.value);
-                                }}
                             />
-                            <TextField
-                                error={mutation.isError}
-                                label="Place of living:"
+                            <TextFieldElement
+                                control={control}
+                                name="first_name"
+                                label="First name"
                                 required
-                                fullWidth
-                                value={placeOfLiving}
-                                onChange={(e) => {
-                                    mutation.isError && mutation.reset();
-                                    setPlaceOfLiving(e.target.value);
-                                }}
                             />
-                            <FormControl fullWidth>
-                                <InputLabel id="demo-simple-select-label">
-                                    Role
-                                </InputLabel>
-                                <Select label="Role"
-                                    labelId="demo-simple-select-label"
-                                    required
-                                    fullWidth
-                                    value={role}
-                                    onChange={(e) => {
-                                        mutation.isError && mutation.reset();
-                                        setRole(e.target.value);
-                                    }}
-                                >
-                                    {ROLE_OPTIONS.map((option) => (
-                                        <MenuItem
-                                            key={option.value}
-                                            value={option.value}
-                                        >
-                                            {" "}
-                                            {option.label}{" "}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                            <TextFieldElement
+                                control={control}
+                                name="last_name"
+                                label="Last name"
+                                required
+                            />
+                            <TextFieldElement
+                                control={control}
+                                name="email"
+                                label="Email"
+                                required
+                            />
+                            <TextFieldElement
+                                control={control}
+                                name="place_of_living"
+                                label="Place of living"
+                                required
+                            />
+                            <SelectElement
+                                control={control}
+                                name="role"
+                                label="Role"
+                                options={ROLE_OPTIONS}
+                                required
+                            />
                             <LoadingButton
                                 variant="contained"
                                 loading={mutation.isLoading}
-                                onClick={() =>
-                                    mutation.mutate({
-                                        username,
-                                        email,
-                                        password,
-                                        first_name: firstName,
-                                        last_name: lastName,
-                                        place_of_living: placeOfLiving,
-                                        role,
-                                    })
-                                }
+                                onClick={submit}
                             >
                                 Register
                             </LoadingButton>

@@ -9,17 +9,23 @@ import {
     Container,
     Paper,
     Stack,
-    TextField,
     Typography,
 } from "@mui/material";
 import { useState } from "react";
 import { useMutation } from "react-query";
+import { useForm } from "react-hook-form";
+import { TextFieldElement } from "react-hook-form-mui";
 
 function Login() {
     const { setToken } = useToken();
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState(false);
+    const {control, handleSubmit, formState} = useForm({
+        defaultValues: {
+            username: "",
+            password: "",
+        },
+        
+    });
+    const [error, setError] = useState<string | null>(null);
     const mutation = useMutation(
         (data: LoginDto) => {
             return axios.post("/auth/login", data);
@@ -31,63 +37,57 @@ function Login() {
                 }
             },
             onError(error, variables, context) {
-                setError(true);
+                setError("Wrong credentials");
             },
         }
     );
+
+    const submit = handleSubmit((data) => {
+        mutation.mutate(data);
+    });
 
     return (
         <MainLayout>
             <GuestWraper>
                 <Container maxWidth="xs" sx={{ marginTop: "15vh" }}>
                     <Paper sx={{ p: 3 }}>
-                        <Stack spacing={3}>
-                            <Typography
-                                variant="h5"
-                                textAlign={"center"}
-                                gutterBottom
-                                mb={2}
-                            >
-                                Login
-                            </Typography>
-                            <TextField
-                                error={error}
-                                label="Username:"
-                                required
-                                fullWidth
-                                value={username}
-                                onChange={(e) => {
-                                    error && setError(false);
-                                    setUsername(e.target.value);
-                                }}
-                            />
-                            <TextField
-                                error={error}
-                                label="Password:"
-                                type="password"
-                                required
-                                fullWidth
-                                value={password}
-                                onChange={(e) => {
-                                    error && setError(false);
-                                    setPassword(e.target.value);
-                                }}
-                            />
-                            {error && (
-                                <Alert severity="error" variant="outlined">
-                                    Wrong credentials
-                                </Alert>
-                            )}
-                            <LoadingButton
-                                variant="contained"
-                                loading={mutation.isLoading}
-                                onClick={() =>
-                                    mutation.mutate({ username, password })
-                                }
-                            >
-                                Login
-                            </LoadingButton>
-                        </Stack>
+                            <Stack spacing={3}>
+                                <Typography
+                                    variant="h5"
+                                    textAlign={"center"}
+                                    gutterBottom
+                                    mb={2}
+                                >
+                                    Login
+                                </Typography>
+                                {error && (
+                                    <Alert severity="error">{error}</Alert>
+                                )}
+
+                                <TextFieldElement
+                                    name="username"
+                                    label="Username"
+                                    required
+                                    control={control}
+                                    
+                                />
+                                <TextFieldElement
+                                    name="password"
+                                    label="Password"
+                                    type="password"
+                                    required
+                                    control={control}
+                                />
+                                <LoadingButton
+                                    variant="contained"
+                                    loading={mutation.isLoading}
+                                    onClick={submit}
+                                    disabled={!formState.isValid}
+                                >
+                                    {" "}
+                                    Login{" "}
+                                </LoadingButton>
+                            </Stack>
                     </Paper>
                 </Container>
             </GuestWraper>
@@ -96,3 +96,5 @@ function Login() {
 }
 
 export default Login;
+
+
