@@ -2,7 +2,10 @@ package src
 
 import (
 	"context"
+	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -10,6 +13,7 @@ import (
 	"reservation.accommodation.com/config"
 	"reservation.accommodation.com/pb"
 	"reservation.accommodation.com/src/db"
+	"reservation.accommodation.com/src/model"
 )
 
 type Server struct {
@@ -48,10 +52,67 @@ func (s *Server) GetReservation(context.Context, *pb.GetReservationRequest) (*pb
 	}, nil
 	//return nil, status.Errorf(codes.Unimplemented, "method GetReservation not implemented")
 }
-func (s *Server) CreateReservation(context.Context, *pb.CreateReservationRequest) (*pb.Reservation, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateReservation not implemented")
+func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReservationRequest) (*pb.Reservation, error) {
+	// Create timeout context
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	userId, err := primitive.ObjectIDFromHex(dto.UserId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid user id")
+	}
+
+	accommodationId, err := primitive.ObjectIDFromHex(dto.AccommodationId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid accommodation id")
+	}
+
+	// Create reservation
+	reservation := model.Reservation{
+		Id:              primitive.NewObjectID(),
+		UserId:          userId,
+		AccommodationId: accommodationId,
+		StartDate:       primitive.NewDateTimeFromTime(dto.StartDate.AsTime()),
+		EndDate:         primitive.NewDateTimeFromTime(dto.EndDate.AsTime()),
+		Status:          "PENNDING",
+		Price:           dto.Price,
+	}
+
+	// Insert reservation
+	_, err = s.res_collection.InsertOne(ctx, reservation)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while inserting reservation")
+	}
+
+	return reservation.ConvertToPbReservation(), nil
 }
-func (s *Server) ApproveReservation(context.Context, *pb.GetReservationRequest) (*pb.Reservation, error) {
+
+func (s *Server) ApproveReservation(parent context.Context, dto *pb.GetReservationRequest) (*pb.Reservation, error) {
+
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	id, err := primitive.ObjectIDFromHex(dto.ReservationId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid reservation id")
+	}
+
+	res, err := s.res_collection.UpdateOne(ctx, bson.M{
+		"_id":    id,
+		"status": "PENNDING",
+	}, bson.M{
+		"status": "APPROVED",
+	})
+
+	// handle error and see res if somthing is updated
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while updating reservation")
+	}
+
+	if res.MatchedCount == 0 {
+		return nil, status.Error(codes.NotFound, "Reservation not found")
+	}
+
 	return nil, status.Errorf(codes.Unimplemented, "method ApproveReservation not implemented")
 }
 func (s *Server) RejectReservation(context.Context, *pb.GetReservationRequest) (*pb.Reservation, error) {
