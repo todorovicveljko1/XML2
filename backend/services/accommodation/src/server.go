@@ -2,34 +2,40 @@ package src
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"acc.accommodation.com/config"
 	"acc.accommodation.com/pb"
 	"acc.accommodation.com/src/db"
 	"acc.accommodation.com/src/model"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// *PREPRAVITI client.Database("Accommodations") u nesto trece.*
 type Server struct {
 	pb.UnimplementedAccommodationServiceServer
 	cfg *config.Config
 
-	acc_collection *mongo.Collection
-
-	dbClient *mongo.Client
+	acc_collection      *mongo.Collection
+	price_collection    *mongo.Collection
+	interval_collection *mongo.Collection
+	dbClient            *mongo.Client
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
 	client, _ := db.DbInit(cfg)
-
-	acc_collection := client.Database("accommodation_acc").Collection("accommodation")
-
-	return &Server{cfg: cfg, dbClient: client, acc_collection: acc_collection}, nil
+	//*PREPRAVITI client.Database("Accommodations") u nesto trece.*
+	acc_collection := client.Database("Accommodations").Collection("accommodation")
+	prices_collection := client.Database("Accommodations").Collection("prices")
+	unavailable_collection := client.Database("Accommodations").Collection("unavailable_intevals")
+	return &Server{cfg: cfg, dbClient: client, acc_collection: acc_collection, price_collection: prices_collection, interval_collection: unavailable_collection}, nil
 }
 
 func (s *Server) Stop() {
@@ -39,8 +45,47 @@ func (s *Server) Stop() {
 }
 
 func (s *Server) GetAccommodation(parent context.Context, dto *pb.GetAccommodationRequest) (*pb.GetAccommodationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAccommodation not implemented")
+	var accommodation model.Accommodation
+	accommodationID, err := primitive.ObjectIDFromHex(dto.Id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while fetching user")
+	}
+
+	err = s.acc_collection.FindOne(parent, bson.M{"_id": accommodationID}).Decode(&accommodation)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, status.Error(codes.NotFound, "Accommodation not found")
+		}
+		return nil, status.Error(codes.Internal, "Error while fetching accommodation")
+	}
+	fmt.Println("found UserID: ", accommodation.UserId)
+	unavailableDates := make([]*timestamppb.Timestamp, 0)
+	datePrices := make([]*pb.DatePrice, 0)
+
+	amenities := make([]pb.Amenity, len(accommodation.Amenity))
+	for i, a := range accommodation.Amenity {
+		amenities[i] = pb.Amenity(a)
+	}
+
+	response := &pb.GetAccommodationResponse{
+		Accomodation: &pb.Accommodation{
+			Id:           accommodation.Id.Hex(),
+			Name:         accommodation.Name,
+			Location:     accommodation.Location,
+			Amenity:      amenities,
+			PhotoUrl:     accommodation.PhotoURL,
+			MaxGuests:    int32(accommodation.MaxGuests),
+			MinGuests:    int32(accommodation.MinGuests),
+			DefaultPrice: accommodation.DefaultPrice,
+			UserId:       accommodation.UserId.Hex(),
+		},
+		UnavailableDates: unavailableDates,
+		DatePrice:        datePrices,
+	}
+
+	return response, nil
 }
+
 func (s *Server) AddAccommodation(parent context.Context, dto *pb.AddAccommodationRequest) (*pb.AddAccommodationResponse, error) {
 	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 	defer cancel()
@@ -87,7 +132,36 @@ func (s *Server) UpdateAvailability(parent context.Context, dto *pb.UpdateAvaila
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateAvailability not implemented")
 }
 func (s *Server) UpdatePrice(parent context.Context, dto *pb.UpdatePriceRequest) (*pb.UpdatePriceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdatePrice not implemented")
+	// Convert the ID string to an ObjectID
+	id, err := primitive.ObjectIDFromHex(dto.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Error parsing ID: %v", err)
+	}
+
+	// Convert the start and end date timestamps to time.Time objects
+	startDate := time.Unix(dto.Price.StartDate.Seconds, int64(dto.Price.StartDate.Nanos))
+	endDate := time.Unix(dto.Price.EndDate.Seconds, int64(dto.Price.EndDate.Nanos))
+
+	// Update the accommodation in the database
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+	result, err := s.acc_collection.UpdateOne(
+		ctx,
+		bson.M{"_id": id, "price.start_date": startDate},
+		bson.M{"$set": bson.M{
+			"price.$.end_date":        endDate,
+			"price.$.price_per_night": dto.Price.PricePerNight,
+		}},
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Error updating price: %v", err)
+	}
+
+	if result.MatchedCount == 0 {
+		return nil, status.Errorf(codes.NotFound, "Accommodation or price not found")
+	}
+
+	return &pb.UpdatePriceResponse{Success: true}, nil
 }
 func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequest) (*pb.AccommodationList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchAccommodations not implemented")

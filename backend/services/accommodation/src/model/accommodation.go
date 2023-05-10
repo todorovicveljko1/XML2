@@ -26,6 +26,17 @@ type Accommodation struct {
 	UserId       primitive.ObjectID `bson:"user_id" json:"user_id"`
 }
 
+type Price struct {
+	StartDate     primitive.Timestamp `bson:"start_date" json:"start_date"`
+	EndDate       primitive.Timestamp `bson:"end_date" json:"end_date"`
+	PricePerNight float64             `bson:"price_per_night" json:"price_per_night"`
+}
+
+type UnavailableInterval struct {
+	StartDate primitive.Timestamp `bson:"start_date" json:"start_date"`
+	EndDate   primitive.Timestamp `bson:"end_date" json:"end_date"`
+}
+
 // Convert to proto
 func (a *Accommodation) ToProto() *pb.Accommodation {
 	temp := make([]pb.Amenity, len(a.Amenity))
