@@ -20,7 +20,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
             <AppBar position="fixed" elevation={1} enableColorOnDark>
                 <Toolbar>
                     <Stack sx={{ flexGrow: 1 }} direction="row" spacing={3}>
-                        <Typography variant="h6">Accomodation App</Typography>
+                        <Button
+                            onClick={() => router.push("/")}
+                            sx={{ color: "white" }}
+                        >
+                            Accomodation App
+                        </Button>
                     </Stack>
                     {isLoading && <span>Loading...</span>}
                     {!isLoading &&

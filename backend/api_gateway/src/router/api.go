@@ -38,13 +38,14 @@ func ApiRouter(r *gin.RouterGroup, clients *client.Clients) {
 	})
 
 	authGroup.PUT("/auth", func(ctx *gin.Context) {
-		//auth.UpdateUserHandler(ctx, clients)
-		ctx.AbortWithStatusJSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
+		auth.UpdateUserHandler(ctx, clients)
+	})
+	authGroup.PUT("/auth/change-password", func(ctx *gin.Context) {
+		auth.ChangePasswordHandler(ctx, clients)
 	})
 
 	authGroup.DELETE("/auth", func(ctx *gin.Context) {
-		//auth.DeleteUserHandler(ctx, clients)
-		ctx.AbortWithStatusJSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
+		auth.DeleteUserHandler(ctx, clients)
 	})
 
 	authGroup.GET("/accommodation/{id}/reservation", func(ctx *gin.Context) {
