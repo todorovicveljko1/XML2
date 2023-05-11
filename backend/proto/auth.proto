@@ -5,6 +5,9 @@ service Auth {
     rpc Register(RegisterRequest) returns (User) {}
     rpc AuthUser(AuthUserRequest) returns (User) {}
     rpc GetUser(GetUserRequest) returns (User) {}
+    rpc DeleteUser(GetUserRequest) returns (Status) {}
+    rpc UpdateUser(User) returns (User) {}
+    rpc ChangePassword(ChangePasswordRequest) returns (Status) {}
 }
 
 message User {
@@ -42,4 +45,14 @@ message AuthUserRequest {
 
 message GetUserRequest {
     string id = 1;
+}
+
+message Status {
+    string status = 1;
+}
+
+message ChangePasswordRequest {
+    string id = 1;
+    string old_password = 2;
+    string new_password = 3;
 }
