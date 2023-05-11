@@ -87,7 +87,7 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 	return reservation.ConvertToPbReservation(), nil
 }
 
-func (s *Server) ApproveReservation(parent context.Context, dto *pb.GetReservationRequest) (*pb.Reservation, error) {
+func (s *Server) ApproveReservation(parent context.Context, dto *pb.GetReservationRequest) (*pb.ReservationStatus, error) {
 
 	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 	defer cancel()
@@ -113,11 +113,13 @@ func (s *Server) ApproveReservation(parent context.Context, dto *pb.GetReservati
 		return nil, status.Error(codes.NotFound, "Reservation not found")
 	}
 
-	return nil, status.Errorf(codes.Unimplemented, "method ApproveReservation not implemented")
+	return &pb.ReservationStatus{
+		Status: "APPROVED",
+	}, nil
 }
-func (s *Server) RejectReservation(context.Context, *pb.GetReservationRequest) (*pb.Reservation, error) {
+func (s *Server) RejectReservation(context.Context, *pb.GetReservationRequest) (*pb.ReservationStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RejectReservation not implemented")
 }
-func (s *Server) CancelReservation(context.Context, *pb.GetReservationRequest) (*pb.Reservation, error) {
+func (s *Server) CancelReservation(context.Context, *pb.GetReservationRequest) (*pb.ReservationStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CancelReservation not implemented")
 }

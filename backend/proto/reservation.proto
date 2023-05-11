@@ -16,9 +16,9 @@ message Reservation{
 service ReservationService{
     rpc GetReservation(GetReservationRequest) returns (Reservation);
     rpc CreateReservation(CreateReservationRequest) returns (Reservation);
-    rpc ApproveReservation(GetReservationRequest) returns (Reservation);
-    rpc RejectReservation(GetReservationRequest) returns (Reservation);
-    rpc CancelReservation(GetReservationRequest) returns (Reservation);
+    rpc ApproveReservation(GetReservationRequest) returns (ReservationStatus);
+    rpc RejectReservation(GetReservationRequest) returns (ReservationStatus);
+    rpc CancelReservation(GetReservationRequest) returns (ReservationStatus);
 }
 
 message GetReservationRequest{
@@ -33,4 +33,7 @@ message CreateReservationRequest{
     double price = 5;
 }
 
+message ReservationStatus{
+    string status = 1;
+}
 

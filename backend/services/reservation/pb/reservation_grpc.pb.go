@@ -32,9 +32,9 @@ const (
 type ReservationServiceClient interface {
 	GetReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*Reservation, error)
 	CreateReservation(ctx context.Context, in *CreateReservationRequest, opts ...grpc.CallOption) (*Reservation, error)
-	ApproveReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*Reservation, error)
-	RejectReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*Reservation, error)
-	CancelReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*Reservation, error)
+	ApproveReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*ReservationStatus, error)
+	RejectReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*ReservationStatus, error)
+	CancelReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*ReservationStatus, error)
 }
 
 type reservationServiceClient struct {
@@ -63,8 +63,8 @@ func (c *reservationServiceClient) CreateReservation(ctx context.Context, in *Cr
 	return out, nil
 }
 
-func (c *reservationServiceClient) ApproveReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*Reservation, error) {
-	out := new(Reservation)
+func (c *reservationServiceClient) ApproveReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*ReservationStatus, error) {
+	out := new(ReservationStatus)
 	err := c.cc.Invoke(ctx, ReservationService_ApproveReservation_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -72,8 +72,8 @@ func (c *reservationServiceClient) ApproveReservation(ctx context.Context, in *G
 	return out, nil
 }
 
-func (c *reservationServiceClient) RejectReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*Reservation, error) {
-	out := new(Reservation)
+func (c *reservationServiceClient) RejectReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*ReservationStatus, error) {
+	out := new(ReservationStatus)
 	err := c.cc.Invoke(ctx, ReservationService_RejectReservation_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -81,8 +81,8 @@ func (c *reservationServiceClient) RejectReservation(ctx context.Context, in *Ge
 	return out, nil
 }
 
-func (c *reservationServiceClient) CancelReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*Reservation, error) {
-	out := new(Reservation)
+func (c *reservationServiceClient) CancelReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*ReservationStatus, error) {
+	out := new(ReservationStatus)
 	err := c.cc.Invoke(ctx, ReservationService_CancelReservation_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -96,9 +96,9 @@ func (c *reservationServiceClient) CancelReservation(ctx context.Context, in *Ge
 type ReservationServiceServer interface {
 	GetReservation(context.Context, *GetReservationRequest) (*Reservation, error)
 	CreateReservation(context.Context, *CreateReservationRequest) (*Reservation, error)
-	ApproveReservation(context.Context, *GetReservationRequest) (*Reservation, error)
-	RejectReservation(context.Context, *GetReservationRequest) (*Reservation, error)
-	CancelReservation(context.Context, *GetReservationRequest) (*Reservation, error)
+	ApproveReservation(context.Context, *GetReservationRequest) (*ReservationStatus, error)
+	RejectReservation(context.Context, *GetReservationRequest) (*ReservationStatus, error)
+	CancelReservation(context.Context, *GetReservationRequest) (*ReservationStatus, error)
 	mustEmbedUnimplementedReservationServiceServer()
 }
 
@@ -112,13 +112,13 @@ func (UnimplementedReservationServiceServer) GetReservation(context.Context, *Ge
 func (UnimplementedReservationServiceServer) CreateReservation(context.Context, *CreateReservationRequest) (*Reservation, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateReservation not implemented")
 }
-func (UnimplementedReservationServiceServer) ApproveReservation(context.Context, *GetReservationRequest) (*Reservation, error) {
+func (UnimplementedReservationServiceServer) ApproveReservation(context.Context, *GetReservationRequest) (*ReservationStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApproveReservation not implemented")
 }
-func (UnimplementedReservationServiceServer) RejectReservation(context.Context, *GetReservationRequest) (*Reservation, error) {
+func (UnimplementedReservationServiceServer) RejectReservation(context.Context, *GetReservationRequest) (*ReservationStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RejectReservation not implemented")
 }
-func (UnimplementedReservationServiceServer) CancelReservation(context.Context, *GetReservationRequest) (*Reservation, error) {
+func (UnimplementedReservationServiceServer) CancelReservation(context.Context, *GetReservationRequest) (*ReservationStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CancelReservation not implemented")
 }
 func (UnimplementedReservationServiceServer) mustEmbedUnimplementedReservationServiceServer() {}
