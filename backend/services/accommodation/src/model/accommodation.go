@@ -27,14 +27,16 @@ type Accommodation struct {
 }
 
 type Price struct {
-	StartDate     primitive.Timestamp `bson:"start_date" json:"start_date"`
-	EndDate       primitive.Timestamp `bson:"end_date" json:"end_date"`
-	PricePerNight float64             `bson:"price_per_night" json:"price_per_night"`
+	Id              primitive.ObjectID `bson:"_id" json:"id"`
+	AccommodationId primitive.ObjectID `bson:"accommodation_id" json:"accommodation_id"`
+	Date            primitive.DateTime `bson:"date" json:"date"`
+	PricePerNight   float64            `bson:"price_per_night" json:"price_per_night"`
 }
 
 type UnavailableInterval struct {
-	StartDate primitive.Timestamp `bson:"start_date" json:"start_date"`
-	EndDate   primitive.Timestamp `bson:"end_date" json:"end_date"`
+	Id              primitive.ObjectID `bson:"_id" json:"id"`
+	AccommodationId primitive.ObjectID `bson:"accommodation_id" json:"accommodation_id"`
+	Date            primitive.DateTime `bson:"date" json:"date"`
 }
 
 // Convert to proto

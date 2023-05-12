@@ -8,6 +8,7 @@ import (
 	"acc.accommodation.com/config"
 	"acc.accommodation.com/pb"
 	"acc.accommodation.com/src/db"
+	"acc.accommodation.com/src/helper"
 	"acc.accommodation.com/src/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,7 +16,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // *PREPRAVITI client.Database("Accommodations") u nesto trece.*
@@ -32,9 +32,9 @@ type Server struct {
 func NewServer(cfg *config.Config) (*Server, error) {
 	client, _ := db.DbInit(cfg)
 	//*PREPRAVITI client.Database("Accommodations") u nesto trece.*
-	acc_collection := client.Database("Accommodations").Collection("accommodation")
-	prices_collection := client.Database("Accommodations").Collection("prices")
-	unavailable_collection := client.Database("Accommodations").Collection("unavailable_intevals")
+	acc_collection := client.Database("accommodation_acc").Collection("accommodation")
+	prices_collection := client.Database("accommodation_acc").Collection("prices")
+	unavailable_collection := client.Database("accommodation_acc").Collection("unavailable_intevals")
 	return &Server{cfg: cfg, dbClient: client, acc_collection: acc_collection, price_collection: prices_collection, interval_collection: unavailable_collection}, nil
 }
 
@@ -59,7 +59,7 @@ func (s *Server) GetAccommodation(parent context.Context, dto *pb.GetAccommodati
 		return nil, status.Error(codes.Internal, "Error while fetching accommodation")
 	}
 	fmt.Println("found UserID: ", accommodation.UserId)
-	unavailableDates := make([]*timestamppb.Timestamp, 0)
+	//unavailableDates := make([]*primitive.DateTime, 1)
 	datePrices := make([]*pb.DatePrice, 0)
 
 	amenities := make([]pb.Amenity, len(accommodation.Amenity))
@@ -79,7 +79,7 @@ func (s *Server) GetAccommodation(parent context.Context, dto *pb.GetAccommodati
 			DefaultPrice: accommodation.DefaultPrice,
 			UserId:       accommodation.UserId.Hex(),
 		},
-		UnavailableDates: unavailableDates,
+		UnavailableDates: nil,
 		DatePrice:        datePrices,
 	}
 
@@ -138,31 +138,29 @@ func (s *Server) UpdatePrice(parent context.Context, dto *pb.UpdatePriceRequest)
 		return nil, status.Errorf(codes.InvalidArgument, "Error parsing ID: %v", err)
 	}
 
-	// Convert the start and end date timestamps to time.Time objects
-	startDate := time.Unix(dto.Price.StartDate.Seconds, int64(dto.Price.StartDate.Nanos))
-	endDate := time.Unix(dto.Price.EndDate.Seconds, int64(dto.Price.EndDate.Nanos))
-
-	// Update the accommodation in the database
-	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
-	defer cancel()
-	result, err := s.acc_collection.UpdateOne(
-		ctx,
-		bson.M{"_id": id, "price.start_date": startDate},
-		bson.M{"$set": bson.M{
-			"price.$.end_date":        endDate,
-			"price.$.price_per_night": dto.Price.PricePerNight,
-		}},
-	)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Error updating price: %v", err)
+	// Create a new Price object
+	days := helper.GetDaysInInterval(dto.Price.StartDate.AsTime(), dto.Price.EndDate.AsTime())
+	for _, day := range days {
+		price := model.Price{
+			AccommodationId: id,
+			Date:            primitive.NewDateTimeFromTime(day),
+			PricePerNight:   dto.Price.PricePerNight,
+		}
+		s.price_collection.UpdateOne(
+			parent, bson.M{"accommodation_id": price.AccommodationId, "date": price.Date},
+			bson.M{
+				"$set": bson.M{"price_per_night": price.PricePerNight},
+				"$setOnInsert": bson.M{
+					"accommodation_id": price.AccommodationId,
+					"date":             price.Date,
+					"price_per_night":  price.PricePerNight,
+					"_id":              primitive.NewObjectID(),
+				},
+			})
 	}
-
-	if result.MatchedCount == 0 {
-		return nil, status.Errorf(codes.NotFound, "Accommodation or price not found")
-	}
-
 	return &pb.UpdatePriceResponse{Success: true}, nil
 }
+
 func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequest) (*pb.AccommodationList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchAccommodations not implemented")
 }
