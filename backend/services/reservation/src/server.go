@@ -129,6 +129,16 @@ func (s *Server) CancelReservation(parent context.Context, dto *pb.GetReservatio
 		return nil, status.Error(codes.InvalidArgument, "Invalid reservation id")
 	}
 
+	var reservation model.Reservation
+	err = s.res_collection.FindOne(ctx, bson.M{"_id": id}).Decode(&reservation)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "Reservation not found")
+	}
+
+	if reservation.StartDate.Time().Before(time.Now()) {
+		return nil, status.Error(codes.DeadlineExceeded, "Canceling reservation is unavailable due to start date already passing.")
+	}
+
 	res, err := s.res_collection.UpdateOne(ctx, bson.M{
 		"_id":    id,
 		"status": "APPROVED",
@@ -136,7 +146,6 @@ func (s *Server) CancelReservation(parent context.Context, dto *pb.GetReservatio
 		"status": "CANCELED",
 	})
 
-	// handle error and see res if somthing is updated
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error while updating reservation")
 	}
