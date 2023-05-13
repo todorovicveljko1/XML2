@@ -120,6 +120,32 @@ func (s *Server) ApproveReservation(parent context.Context, dto *pb.GetReservati
 func (s *Server) RejectReservation(context.Context, *pb.GetReservationRequest) (*pb.ReservationStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RejectReservation not implemented")
 }
-func (s *Server) CancelReservation(context.Context, *pb.GetReservationRequest) (*pb.ReservationStatus, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CancelReservation not implemented")
+func (s *Server) CancelReservation(parent context.Context, dto *pb.GetReservationRequest) (*pb.ReservationStatus, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	id, err := primitive.ObjectIDFromHex(dto.ReservationId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid reservation id")
+	}
+
+	res, err := s.res_collection.UpdateOne(ctx, bson.M{
+		"_id":    id,
+		"status": "APPROVED",
+	}, bson.M{
+		"status": "CANCELED",
+	})
+
+	// handle error and see res if somthing is updated
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while updating reservation")
+	}
+
+	if res.MatchedCount == 0 {
+		return nil, status.Error(codes.NotFound, "Reservation not found")
+	}
+
+	return &pb.ReservationStatus{
+		Status: "CANCELED",
+	}, nil
 }
