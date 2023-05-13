@@ -3,11 +3,13 @@ package manager
 import (
 	"context"
 	"log"
+	"time"
 
 	"acc.accommodation.com/src/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type AvailableIntervalManager struct {
@@ -26,7 +28,16 @@ func NewAvailableIntervalManager(available_interval_collection *mongo.Collection
 func (a *AvailableIntervalManager) GetAvailableIntervalsByAccommodationId(ctx context.Context, accommodationId primitive.ObjectID) ([]*model.AvailableInterval, error) {
 	// Find the accommodation
 	availableIntervals := []*model.AvailableInterval{}
-	cursor, err := a.available_interval_collection.Find(ctx, map[string]interface{}{"accommodation_id": accommodationId})
+
+	//cursor with sorted start_date and start or end is greather than today
+	cursor, err := a.available_interval_collection.Find(ctx, bson.M{
+		"accommodation_id": accommodationId,
+		"$or": bson.A{
+			bson.M{"start_date": bson.M{"$gte": time.Now()}},
+			bson.M{"end_date": bson.M{"$gte": time.Now()}},
+		},
+	}, options.Find().SetSort(bson.D{{"start_date", 1}}))
+
 	if err != nil {
 		return nil, err
 	}
@@ -159,17 +170,19 @@ func (a *AvailableIntervalManager) AddAvailableInterval(ctx context.Context, new
 		return nil, err
 	}
 	// insert new interval
-	res, err := a.available_interval_collection.InsertOne(ctx, newInterval)
-	if err != nil {
-		log.Println("Cannot insert new interval")
-		session.AbortTransaction(ctx)
-		return nil, err
+	if !newInterval.IsAvailable {
+		_, err = a.available_interval_collection.InsertOne(ctx, newInterval)
+		if err != nil {
+			log.Println("Cannot insert new interval")
+			session.AbortTransaction(ctx)
+			return nil, err
+		}
 	}
 	err = session.CommitTransaction(ctx)
 	if err != nil {
 		log.Println("Cannot commit transaction")
 		return nil, err
 	}
-	return res.InsertedID, nil
+	return "Success", nil
 
 }

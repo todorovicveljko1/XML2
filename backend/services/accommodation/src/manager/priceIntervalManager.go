@@ -3,11 +3,13 @@ package manager
 import (
 	"context"
 	"log"
+	"time"
 
 	"acc.accommodation.com/src/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type PriceIntervalManager struct {
@@ -27,7 +29,14 @@ func (a *PriceIntervalManager) GetPriceIntervalsByAccommodationId(ctx context.Co
 
 	// Find the accommodation
 	priceIntervals := []*model.PriceInterval{}
-	cursor, err := a.price_interval_collection.Find(ctx, map[string]interface{}{"accommodation_id": accommodationId})
+	//cursor with sorted start_date and start or end is greather than today
+	cursor, err := a.price_interval_collection.Find(ctx, bson.M{
+		"accommodation_id": accommodationId,
+		"$or": bson.A{
+			bson.M{"start_date": bson.M{"$gte": time.Now()}},
+			bson.M{"end_date": bson.M{"$gte": time.Now()}},
+		},
+	}, options.Find().SetSort(bson.D{{"start_date", 1}}))
 	if err != nil {
 		return nil, err
 	}

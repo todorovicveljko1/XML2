@@ -10,14 +10,14 @@ import (
 func AddAvailableIntervalHandler(ctx *gin.Context, clients *client.Clients) {
 	var addAvailableIntervalRequest pb.AddAvailabilityRequest
 
-	err := ctx.BindJSON(&addAvailableIntervalRequest)
+	err := ctx.BindJSON(&addAvailableIntervalRequest.Availability)
 	if err != nil {
 		ctx.AbortWithStatusJSON(400, gin.H{
 			"error": "Invalid request",
 		})
 		return
 	}
-
+	addAvailableIntervalRequest.Id = ctx.Param("id")
 	/*
 		TODO: Check if user is owner of accommodation
 		userId, exists := ctx.Get("user")

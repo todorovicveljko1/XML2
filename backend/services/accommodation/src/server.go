@@ -206,7 +206,7 @@ func (s *Server) AddAccommodationAvailability(parent context.Context, dto *pb.Ad
 		return nil, status.Errorf(codes.Internal, "failed to insert available interval: %v", err)
 	}
 
-	return &pb.ResponseMessage{Message: res.(primitive.ObjectID).Hex()}, nil
+	return &pb.ResponseMessage{Message: res.(string)}, nil
 }
 func (s *Server) AddAccommodationPrice(parent context.Context, dto *pb.AddPriceRequest) (*pb.ResponseMessage, error) {
 
