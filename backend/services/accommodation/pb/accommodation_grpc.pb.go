@@ -19,11 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AccommodationService_GetAccommodation_FullMethodName     = "/accommodation.AccommodationService/GetAccommodation"
-	AccommodationService_CreateAccommodation_FullMethodName  = "/accommodation.AccommodationService/CreateAccommodation"
-	AccommodationService_UpdateAvailability_FullMethodName   = "/accommodation.AccommodationService/UpdateAvailability"
-	AccommodationService_UpdatePrice_FullMethodName          = "/accommodation.AccommodationService/UpdatePrice"
-	AccommodationService_SearchAccommodations_FullMethodName = "/accommodation.AccommodationService/SearchAccommodations"
+	AccommodationService_GetAccommodation_FullMethodName             = "/accommodation.AccommodationService/GetAccommodation"
+	AccommodationService_CreateAccommodation_FullMethodName          = "/accommodation.AccommodationService/CreateAccommodation"
+	AccommodationService_AddAccommodationAvailability_FullMethodName = "/accommodation.AccommodationService/AddAccommodationAvailability"
+	AccommodationService_AddAccommodationPrice_FullMethodName        = "/accommodation.AccommodationService/AddAccommodationPrice"
+	AccommodationService_SearchAccommodations_FullMethodName         = "/accommodation.AccommodationService/SearchAccommodations"
 )
 
 // AccommodationServiceClient is the client API for AccommodationService service.
@@ -32,8 +32,8 @@ const (
 type AccommodationServiceClient interface {
 	GetAccommodation(ctx context.Context, in *GetAccommodationRequest, opts ...grpc.CallOption) (*GetAccommodationResponse, error)
 	CreateAccommodation(ctx context.Context, in *CreateAccommodationRequest, opts ...grpc.CallOption) (*ResponseMessage, error)
-	UpdateAvailability(ctx context.Context, in *UpdateAvailabilityRequest, opts ...grpc.CallOption) (*ResponseMessage, error)
-	UpdatePrice(ctx context.Context, in *UpdatePriceRequest, opts ...grpc.CallOption) (*ResponseMessage, error)
+	AddAccommodationAvailability(ctx context.Context, in *AddAvailabilityRequest, opts ...grpc.CallOption) (*ResponseMessage, error)
+	AddAccommodationPrice(ctx context.Context, in *AddPriceRequest, opts ...grpc.CallOption) (*ResponseMessage, error)
 	SearchAccommodations(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*AccommodationList, error)
 }
 
@@ -63,18 +63,18 @@ func (c *accommodationServiceClient) CreateAccommodation(ctx context.Context, in
 	return out, nil
 }
 
-func (c *accommodationServiceClient) UpdateAvailability(ctx context.Context, in *UpdateAvailabilityRequest, opts ...grpc.CallOption) (*ResponseMessage, error) {
+func (c *accommodationServiceClient) AddAccommodationAvailability(ctx context.Context, in *AddAvailabilityRequest, opts ...grpc.CallOption) (*ResponseMessage, error) {
 	out := new(ResponseMessage)
-	err := c.cc.Invoke(ctx, AccommodationService_UpdateAvailability_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, AccommodationService_AddAccommodationAvailability_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *accommodationServiceClient) UpdatePrice(ctx context.Context, in *UpdatePriceRequest, opts ...grpc.CallOption) (*ResponseMessage, error) {
+func (c *accommodationServiceClient) AddAccommodationPrice(ctx context.Context, in *AddPriceRequest, opts ...grpc.CallOption) (*ResponseMessage, error) {
 	out := new(ResponseMessage)
-	err := c.cc.Invoke(ctx, AccommodationService_UpdatePrice_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, AccommodationService_AddAccommodationPrice_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +96,8 @@ func (c *accommodationServiceClient) SearchAccommodations(ctx context.Context, i
 type AccommodationServiceServer interface {
 	GetAccommodation(context.Context, *GetAccommodationRequest) (*GetAccommodationResponse, error)
 	CreateAccommodation(context.Context, *CreateAccommodationRequest) (*ResponseMessage, error)
-	UpdateAvailability(context.Context, *UpdateAvailabilityRequest) (*ResponseMessage, error)
-	UpdatePrice(context.Context, *UpdatePriceRequest) (*ResponseMessage, error)
+	AddAccommodationAvailability(context.Context, *AddAvailabilityRequest) (*ResponseMessage, error)
+	AddAccommodationPrice(context.Context, *AddPriceRequest) (*ResponseMessage, error)
 	SearchAccommodations(context.Context, *SearchRequest) (*AccommodationList, error)
 	mustEmbedUnimplementedAccommodationServiceServer()
 }
@@ -112,11 +112,11 @@ func (UnimplementedAccommodationServiceServer) GetAccommodation(context.Context,
 func (UnimplementedAccommodationServiceServer) CreateAccommodation(context.Context, *CreateAccommodationRequest) (*ResponseMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAccommodation not implemented")
 }
-func (UnimplementedAccommodationServiceServer) UpdateAvailability(context.Context, *UpdateAvailabilityRequest) (*ResponseMessage, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateAvailability not implemented")
+func (UnimplementedAccommodationServiceServer) AddAccommodationAvailability(context.Context, *AddAvailabilityRequest) (*ResponseMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddAccommodationAvailability not implemented")
 }
-func (UnimplementedAccommodationServiceServer) UpdatePrice(context.Context, *UpdatePriceRequest) (*ResponseMessage, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdatePrice not implemented")
+func (UnimplementedAccommodationServiceServer) AddAccommodationPrice(context.Context, *AddPriceRequest) (*ResponseMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddAccommodationPrice not implemented")
 }
 func (UnimplementedAccommodationServiceServer) SearchAccommodations(context.Context, *SearchRequest) (*AccommodationList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchAccommodations not implemented")
@@ -170,38 +170,38 @@ func _AccommodationService_CreateAccommodation_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AccommodationService_UpdateAvailability_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateAvailabilityRequest)
+func _AccommodationService_AddAccommodationAvailability_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddAvailabilityRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AccommodationServiceServer).UpdateAvailability(ctx, in)
+		return srv.(AccommodationServiceServer).AddAccommodationAvailability(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AccommodationService_UpdateAvailability_FullMethodName,
+		FullMethod: AccommodationService_AddAccommodationAvailability_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AccommodationServiceServer).UpdateAvailability(ctx, req.(*UpdateAvailabilityRequest))
+		return srv.(AccommodationServiceServer).AddAccommodationAvailability(ctx, req.(*AddAvailabilityRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AccommodationService_UpdatePrice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdatePriceRequest)
+func _AccommodationService_AddAccommodationPrice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddPriceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AccommodationServiceServer).UpdatePrice(ctx, in)
+		return srv.(AccommodationServiceServer).AddAccommodationPrice(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AccommodationService_UpdatePrice_FullMethodName,
+		FullMethod: AccommodationService_AddAccommodationPrice_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AccommodationServiceServer).UpdatePrice(ctx, req.(*UpdatePriceRequest))
+		return srv.(AccommodationServiceServer).AddAccommodationPrice(ctx, req.(*AddPriceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -240,12 +240,12 @@ var AccommodationService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AccommodationService_CreateAccommodation_Handler,
 		},
 		{
-			MethodName: "UpdateAvailability",
-			Handler:    _AccommodationService_UpdateAvailability_Handler,
+			MethodName: "AddAccommodationAvailability",
+			Handler:    _AccommodationService_AddAccommodationAvailability_Handler,
 		},
 		{
-			MethodName: "UpdatePrice",
-			Handler:    _AccommodationService_UpdatePrice_Handler,
+			MethodName: "AddAccommodationPrice",
+			Handler:    _AccommodationService_AddAccommodationPrice_Handler,
 		},
 		{
 			MethodName: "SearchAccommodations",

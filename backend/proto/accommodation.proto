@@ -34,14 +34,14 @@ message PriceInterval {
 //repeated Price price = 9;
 
 message AccommodationList {
-  repeated Accommodation accommodation = 1;
+  repeated Accommodation accommodations = 1;
 }
 
 service AccommodationService {
   rpc GetAccommodation(GetAccommodationRequest) returns (GetAccommodationResponse);
   rpc CreateAccommodation(CreateAccommodationRequest) returns (ResponseMessage);
-  rpc UpdateAvailability(UpdateAvailabilityRequest) returns (ResponseMessage);
-  rpc UpdatePrice(UpdatePriceRequest) returns (ResponseMessage);
+  rpc AddAccommodationAvailability(AddAvailabilityRequest) returns (ResponseMessage);
+  rpc AddAccommodationPrice(AddPriceRequest) returns (ResponseMessage);
   rpc SearchAccommodations(SearchRequest) returns (AccommodationList);
 }
 
@@ -74,19 +74,22 @@ message ResponseMessage {
   string message = 1;
 }
 
-message UpdateAvailabilityRequest {
+message AddAvailabilityRequest {
   string id = 1;
   AvailableInterval availability = 2;
 }
 
-message UpdatePriceRequest {
+message AddPriceRequest {
   string id = 1;
   PriceInterval price = 2;
 }
 
 message SearchRequest {
-  string location = 1;
-  int32 num_guests = 2;
-  string start_date = 3;
-  string end_date = 4;
+  optional string location = 1;
+  optional int32 num_guests = 2;
+  optional string start_date = 3;
+  optional string end_date = 4;
+  repeated string amenity = 5;
+  string user_id = 6;
+  bool show_my = 7;
 }

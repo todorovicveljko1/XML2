@@ -26,8 +26,11 @@ func ApiRouter(r *gin.RouterGroup, clients *client.Clients) {
 	})
 
 	r.GET("/accommodation", func(ctx *gin.Context) {
-		//accommodation.GetAccommodationHandler(ctx, clients)
-		ctx.AbortWithStatusJSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
+		accommodation.SearchAccommodationsHandler(ctx, clients)
+	})
+
+	r.GET("/accommodation/{id}", func(ctx *gin.Context) {
+		accommodation.GetAccommodationHandler(ctx, clients)
 	})
 
 	// ----------------- AUTH ROUTES -----------------

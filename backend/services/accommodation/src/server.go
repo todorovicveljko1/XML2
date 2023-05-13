@@ -7,7 +7,9 @@ import (
 	"acc.accommodation.com/config"
 	"acc.accommodation.com/pb"
 	"acc.accommodation.com/src/db"
+	"acc.accommodation.com/src/manager"
 	"acc.accommodation.com/src/model"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
@@ -22,6 +24,9 @@ type Server struct {
 	prices_collection    *mongo.Collection
 	available_collection *mongo.Collection
 
+	available_interval_manager *manager.AvailableIntervalManager
+	price_interval_manager     *manager.PriceIntervalManager
+
 	dbClient *mongo.Client
 }
 
@@ -32,12 +37,18 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	prices_collection := client.Database("accommodation_acc").Collection("prices_intervals")
 	available_collection := client.Database("accommodation_acc").Collection("available_intevals")
 
+	available_interval_manager := manager.NewAvailableIntervalManager(available_collection, client)
+	price_interval_manager := manager.NewPriceIntervalManager(prices_collection, client)
+
 	return &Server{
 		cfg:                  cfg,
 		dbClient:             client,
 		acc_collection:       acc_collection,
 		prices_collection:    prices_collection,
 		available_collection: available_collection,
+
+		available_interval_manager: available_interval_manager,
+		price_interval_manager:     price_interval_manager,
 	}, nil
 }
 
@@ -54,27 +65,23 @@ func (s *Server) GetAccommodation(parent context.Context, dto *pb.GetAccommodati
 
 	accId, err := primitive.ObjectIDFromHex(dto.Id)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert accommodation id")
+		return nil, status.Errorf(codes.InvalidArgument, "failed to convert accommodation id")
 	}
-
 	// Find the accommodation
 	var acc model.Accommodation
-	err = s.acc_collection.FindOne(ctx, model.Accommodation{Id: accId}).Decode(&acc)
+	err = s.acc_collection.FindOne(ctx, bson.M{"_id": accId}).Decode(&acc)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find accommodation: %v", err)
+		return nil, status.Errorf(codes.NotFound, "failed to find accommodation: %v", err)
 	}
 
 	// Find the available intervals
-	var availableIntervals []model.AvailableInterval
-	cursor, err := s.available_collection.Find(ctx, model.AvailableInterval{AccommodationId: accId})
+	availableIntervals, err := s.available_interval_manager.GetAvailableIntervalsByAccommodationId(ctx, accId)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find available intervals: %v", err)
 	}
-	cursor.All(ctx, &availableIntervals)
-
 	// Find the price intervals
 	var priceIntervals []model.PriceInterval
-	cursor, err = s.prices_collection.Find(ctx, model.PriceInterval{AccommodationId: accId})
+	cursor, err := s.prices_collection.Find(ctx, bson.M{"accommodation_id": accId})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find price intervals: %v", err)
 	}
@@ -129,7 +136,7 @@ func (s *Server) CreateAccommodation(parent context.Context, dto *pb.CreateAccom
 	return &pb.ResponseMessage{Message: res.InsertedID.(primitive.ObjectID).Hex()}, nil
 
 }
-func (s *Server) UpdateAvailability(parent context.Context, dto *pb.UpdateAvailabilityRequest) (*pb.ResponseMessage, error) {
+func (s *Server) AddAccommodationAvailability(parent context.Context, dto *pb.AddAvailabilityRequest) (*pb.ResponseMessage, error) {
 
 	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 	defer cancel()
@@ -149,8 +156,7 @@ func (s *Server) UpdateAvailability(parent context.Context, dto *pb.UpdateAvaila
 		return nil, status.Errorf(codes.Internal, "failed to parse end date")
 	}
 
-	// Save the available interval
-	res, err := s.available_collection.InsertOne(ctx, model.AvailableInterval{
+	res, err := s.available_interval_manager.AddAvailableInterval(ctx, &model.AvailableInterval{
 		Id:              primitive.NewObjectID(),
 		AccommodationId: accId,
 		StartDate:       startDate,
@@ -162,9 +168,9 @@ func (s *Server) UpdateAvailability(parent context.Context, dto *pb.UpdateAvaila
 		return nil, status.Errorf(codes.Internal, "failed to insert available interval: %v", err)
 	}
 
-	return &pb.ResponseMessage{Message: res.InsertedID.(primitive.ObjectID).Hex()}, nil
+	return &pb.ResponseMessage{Message: res.(primitive.ObjectID).Hex()}, nil
 }
-func (s *Server) UpdatePrice(parent context.Context, dto *pb.UpdatePriceRequest) (*pb.ResponseMessage, error) {
+func (s *Server) AddAccommodationPrice(parent context.Context, dto *pb.AddPriceRequest) (*pb.ResponseMessage, error) {
 
 	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 	defer cancel()
@@ -185,7 +191,7 @@ func (s *Server) UpdatePrice(parent context.Context, dto *pb.UpdatePriceRequest)
 	}
 
 	// Save the price interval
-	res, err := s.prices_collection.InsertOne(ctx, model.PriceInterval{
+	res, err := s.price_interval_manager.AddPriceInterval(ctx, &model.PriceInterval{
 		Id:              primitive.NewObjectID(),
 		AccommodationId: accId,
 		StartDate:       startDate,
@@ -197,8 +203,52 @@ func (s *Server) UpdatePrice(parent context.Context, dto *pb.UpdatePriceRequest)
 		return nil, status.Errorf(codes.Internal, "failed to insert price interval: %v", err)
 	}
 
-	return &pb.ResponseMessage{Message: res.InsertedID.(primitive.ObjectID).Hex()}, nil
+	return &pb.ResponseMessage{Message: res.(primitive.ObjectID).Hex()}, nil
 }
 func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequest) (*pb.AccommodationList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SearchAccommodations not implemented")
+
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	// create bson filter
+	filter := bson.M{}
+	if dto.Location != nil {
+		filter["location"] = dto.Location
+	}
+	if dto.NumGuests != nil {
+		filter["min_guests"] = bson.M{"$lte": dto.NumGuests}
+		filter["max_guests"] = bson.M{"$gte": dto.NumGuests}
+	}
+	if dto.Amenity != nil && len(dto.Amenity) != 0 {
+		filter["amenity"] = bson.M{"$in": dto.Amenity}
+	}
+	if dto.ShowMy {
+		userId, err := primitive.ObjectIDFromHex(dto.UserId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert user id")
+		}
+		filter["user_id"] = userId
+	}
+
+	// TODO: date filtering
+
+	// Find the accommodations
+	cursor, err := s.acc_collection.Find(ctx, filter)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find accommodations: %v", err)
+	}
+
+	// Convert to proto
+	var accommodations []*pb.Accommodation
+	for cursor.Next(ctx) {
+		var acc model.Accommodation
+		err := cursor.Decode(&acc)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to decode accommodation: %v", err)
+		}
+		accommodations = append(accommodations, acc.ToProto())
+	}
+
+	return &pb.AccommodationList{Accommodations: accommodations}, nil
+
 }
