@@ -2,6 +2,7 @@ package src
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"acc.accommodation.com/config"
@@ -250,14 +251,19 @@ func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequ
 
 	// create bson filter
 	filter := bson.M{}
-	if dto.Location != nil {
-		filter["location"] = dto.Location
+
+	// log dto
+
+	if dto.Location != nil && *dto.Location != "" {
+		// regex contains
+		filter["location"] = primitive.Regex{Pattern: *dto.Location, Options: "i"}
+
 	}
-	if dto.NumGuests != nil {
+	if dto.NumGuests != nil && *dto.NumGuests != 0 {
 		filter["min_guests"] = bson.M{"$lte": dto.NumGuests}
 		filter["max_guests"] = bson.M{"$gte": dto.NumGuests}
 	}
-	if dto.Amenity != nil && len(dto.Amenity) != 0 {
+	if dto.Amenity != nil && len(dto.Amenity) != 0 && dto.Amenity[0] != "" {
 		filter["amenity"] = bson.M{"$in": dto.Amenity}
 	}
 	if dto.ShowMy {
@@ -267,7 +273,8 @@ func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequ
 		}
 		filter["user_id"] = userId
 	}
-
+	// log filter
+	log.Println(filter)
 	// TODO: date filtering
 
 	// Find the accommodations

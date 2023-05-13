@@ -1,6 +1,9 @@
 package accommodation
 
 import (
+	"log"
+	"strings"
+
 	"api.accommodation.com/pb"
 	"api.accommodation.com/src/client"
 	"api.accommodation.com/src/helper"
@@ -8,22 +11,22 @@ import (
 )
 
 type SearchAccommodationsRequest struct {
-	Location  *string  `json:"location,omitempty"`
-	NumGuests *int32   `json:"num_guests,omitempty"`
-	StartDate *string  `json:"start_date,omitempty"`
-	EndDate   *string  `json:"end_date,omitempty"`
-	Amenity   []string `json:"amenity,omitempty"`
-	ShowMy    bool     `json:"show_my,omitempty"`
+	Location  string `form:"location,omitempty"`
+	NumGuests int32  `form:"num_guests,omitempty"`
+	StartDate string `form:"start_date,omitempty"`
+	EndDate   string `form:"end_date,omitempty"`
+	Amenity   string `form:"amenity,omitempty"`
+	ShowMy    bool   `form:"show_my,omitempty"`
 }
 
 // Conver to proto
 func (s *SearchAccommodationsRequest) ToProto(userId string) *pb.SearchRequest {
 	return &pb.SearchRequest{
-		Location:  s.Location,
-		NumGuests: s.NumGuests,
-		StartDate: s.StartDate,
-		EndDate:   s.EndDate,
-		Amenity:   s.Amenity,
+		Location:  &s.Location,
+		NumGuests: &s.NumGuests,
+		StartDate: &s.StartDate,
+		EndDate:   &s.EndDate,
+		Amenity:   strings.Split(s.Amenity, ","),
 		UserId:    userId,
 		ShowMy:    s.ShowMy,
 	}
@@ -52,7 +55,7 @@ func SearchAccommodationsHandler(ctx *gin.Context, clients *client.Clients) {
 		}
 		searchAccommodationsRequestProto.UserId = userId.(string)
 	}
-
+	log.Println(searchAccommodationsRequest)
 	acc, err := clients.AccommodationClient.SearchAccommodations(ctx, searchAccommodationsRequestProto)
 
 	if err != nil {
