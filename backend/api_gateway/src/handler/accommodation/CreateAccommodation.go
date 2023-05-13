@@ -3,47 +3,37 @@ package accommodation
 import (
 	"api.accommodation.com/pb"
 	"api.accommodation.com/src/client"
+	"api.accommodation.com/src/dto"
 	"api.accommodation.com/src/helper"
 	"github.com/gin-gonic/gin"
-	"google.golang.org/grpc/metadata"
 )
 
 type CreateAccommodationRequest struct {
-	Amenity      []int32  `json:"amenity"`
-	DefaultPrice float64  `json:"default_price"`
-	Location     string   `json:"location"`
-	MaxGuests    int32    `json:"max_guests"`
-	MinGuests    int32    `json:"min_guests"`
-	Name         string   `json:"name"`
-	PhotoURL     []string `json:"photo_url"`
+	Amenity         []string `json:"amenity"`
+	DefaultPrice    float64  `json:"default_price"`
+	Location        string   `json:"location"`
+	MaxGuests       int32    `json:"max_guests"`
+	MinGuests       int32    `json:"min_guests"`
+	Name            string   `json:"name"`
+	PhotoURL        []string `json:"photo_url"`
+	IsPricePerNight bool     `json:"is_price_per_night"`
+	IsManual        bool     `json:"is_manual"`
 }
 
 // Convert to proto
-func (r *CreateAccommodationRequest) ToProto() *pb.AddAccommodationRequest {
-	temp := make([]pb.Amenity, len(r.Amenity))
-	for i, v := range r.Amenity {
-		temp[i] = pb.Amenity(v)
-	}
+func (r *CreateAccommodationRequest) ToProto(userId string) *pb.CreateAccommodationRequest {
 
-	return &pb.AddAccommodationRequest{
-		Amenity:      temp,
-		DefaultPrice: r.DefaultPrice,
-		Location:     r.Location,
-		MaxGuests:    r.MaxGuests,
-		MinGuests:    r.MinGuests,
-		Name:         r.Name,
-		PhotoUrl:     r.PhotoURL,
-	}
-}
-
-type CreateAccommodationResponse struct {
-	Success bool `json:"success"`
-}
-
-// Convert from proto
-func CreateAccommodationResponseFromProto(r *pb.AddAccommodationResponse) *CreateAccommodationResponse {
-	return &CreateAccommodationResponse{
-		Success: r.Success,
+	return &pb.CreateAccommodationRequest{
+		Amenity:         r.Amenity,
+		DefaultPrice:    r.DefaultPrice,
+		Location:        r.Location,
+		MaxGuests:       r.MaxGuests,
+		MinGuests:       r.MinGuests,
+		Name:            r.Name,
+		PhotoUrl:        r.PhotoURL,
+		IsPricePerNight: r.IsPricePerNight,
+		IsManual:        r.IsManual,
+		UserId:          userId,
 	}
 }
 
@@ -67,15 +57,13 @@ func CreateAccommodationHandler(ctx *gin.Context, clients *client.Clients) {
 		return
 	}
 
-	md := metadata.New(map[string]string{"user": userId.(string)})
-	new_ctx := metadata.NewOutgoingContext(ctx.Request.Context(), md)
-	res, err := clients.AccommodationClient.AddAccommodation(new_ctx, createAccommodationRequest.ToProto())
+	_, err = clients.AccommodationClient.CreateAccommodation(ctx, createAccommodationRequest.ToProto(userId.(string)))
 
 	if err != nil {
 		helper.PrettyGRPCError(ctx, err)
 		return
 	}
 
-	ctx.JSON(200, CreateAccommodationResponseFromProto(res))
+	ctx.JSON(200, dto.ResMessage{Message: "Accommodation created"})
 
 }
