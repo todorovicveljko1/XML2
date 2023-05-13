@@ -40,6 +40,7 @@ message AccommodationList {
 service AccommodationService {
   rpc GetAccommodation(GetAccommodationRequest) returns (GetAccommodationResponse);
   rpc CreateAccommodation(CreateAccommodationRequest) returns (ResponseMessage);
+  rpc UpdateAccommodation(Accommodation) returns (ResponseMessage);
   rpc AddAccommodationAvailability(AddAvailabilityRequest) returns (ResponseMessage);
   rpc AddAccommodationPrice(AddPriceRequest) returns (ResponseMessage);
   rpc SearchAccommodations(SearchRequest) returns (AccommodationList);

@@ -7,18 +7,41 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type SearchAccommodationsRequest struct {
+	Location  *string  `json:"location,omitempty"`
+	NumGuests *int32   `json:"num_guests,omitempty"`
+	StartDate *string  `json:"start_date,omitempty"`
+	EndDate   *string  `json:"end_date,omitempty"`
+	Amenity   []string `json:"amenity,omitempty"`
+	ShowMy    bool     `json:"show_my,omitempty"`
+}
+
+// Conver to proto
+func (s *SearchAccommodationsRequest) ToProto(userId string) *pb.SearchRequest {
+	return &pb.SearchRequest{
+		Location:  s.Location,
+		NumGuests: s.NumGuests,
+		StartDate: s.StartDate,
+		EndDate:   s.EndDate,
+		Amenity:   s.Amenity,
+		UserId:    userId,
+		ShowMy:    s.ShowMy,
+	}
+}
+
 func SearchAccommodationsHandler(ctx *gin.Context, clients *client.Clients) {
 
-	var searchAccommodationsRequest pb.SearchRequest
+	var searchAccommodationsRequest SearchAccommodationsRequest
 
-	err := ctx.BindJSON(&searchAccommodationsRequest)
+	err := ctx.BindQuery(&searchAccommodationsRequest)
 	if err != nil {
 		ctx.AbortWithStatusJSON(400, gin.H{
 			"error": "Invalid request",
 		})
 		return
 	}
-	searchAccommodationsRequest.UserId = ""
+
+	searchAccommodationsRequestProto := searchAccommodationsRequest.ToProto("")
 	if searchAccommodationsRequest.ShowMy {
 		userId, exists := ctx.Get("user")
 		if !exists {
@@ -27,10 +50,10 @@ func SearchAccommodationsHandler(ctx *gin.Context, clients *client.Clients) {
 			})
 			return
 		}
-		searchAccommodationsRequest.UserId = userId.(string)
+		searchAccommodationsRequestProto.UserId = userId.(string)
 	}
 
-	acc, err := clients.AccommodationClient.SearchAccommodations(ctx, &searchAccommodationsRequest)
+	acc, err := clients.AccommodationClient.SearchAccommodations(ctx, searchAccommodationsRequestProto)
 
 	if err != nil {
 		helper.PrettyGRPCError(ctx, err)

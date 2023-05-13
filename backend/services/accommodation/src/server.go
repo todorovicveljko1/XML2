@@ -136,6 +136,44 @@ func (s *Server) CreateAccommodation(parent context.Context, dto *pb.CreateAccom
 	return &pb.ResponseMessage{Message: res.InsertedID.(primitive.ObjectID).Hex()}, nil
 
 }
+
+func (s *Server) UpdateAccommodation(parent context.Context, dto *pb.Accommodation) (*pb.ResponseMessage, error) {
+
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	accId, err := primitive.ObjectIDFromHex(dto.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to convert accommodation id")
+	}
+	userId, err := primitive.ObjectIDFromHex(dto.UserId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to convert user id")
+	}
+
+	// Find the accommodation
+
+	res, err := s.acc_collection.UpdateOne(ctx, bson.M{"_id": accId, "user_id": userId}, bson.M{"$set": bson.M{
+		"amenity":            dto.Amenity,
+		"default_price":      dto.DefaultPrice,
+		"location":           dto.Location,
+		"max_guests":         dto.MaxGuests,
+		"min_guests":         dto.MinGuests,
+		"name":               dto.Name,
+		"photo_url":          dto.PhotoUrl,
+		"is_price_per_night": dto.IsPricePerNight,
+		"is_manual":          dto.IsManual,
+	}})
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "failed to find accommodation: %v", err)
+	}
+	if res.MatchedCount == 0 {
+		return nil, status.Errorf(codes.NotFound, "failed to find accommodation: %v", err)
+	}
+
+	return &pb.ResponseMessage{Message: accId.Hex()}, nil
+}
+
 func (s *Server) AddAccommodationAvailability(parent context.Context, dto *pb.AddAvailabilityRequest) (*pb.ResponseMessage, error) {
 
 	ctx, cancel := context.WithTimeout(parent, 5*time.Second)

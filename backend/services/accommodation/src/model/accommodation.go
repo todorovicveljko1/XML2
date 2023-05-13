@@ -22,14 +22,16 @@ type Accommodation struct {
 // Convert to proto
 func (a *Accommodation) ToProto() *pb.Accommodation {
 	return &pb.Accommodation{
-		Id:           a.Id.Hex(),
-		Amenity:      a.Amenity,
-		DefaultPrice: a.DefaultPrice,
-		Location:     a.Location,
-		MaxGuests:    int32(a.MaxGuests),
-		MinGuests:    int32(a.MinGuests),
-		Name:         a.Name,
-		PhotoUrl:     a.PhotoURL,
-		UserId:       a.UserId.Hex(),
+		Id:              a.Id.Hex(),
+		Amenity:         a.Amenity,
+		DefaultPrice:    a.DefaultPrice,
+		Location:        a.Location,
+		MaxGuests:       int32(a.MaxGuests),
+		MinGuests:       int32(a.MinGuests),
+		Name:            a.Name,
+		PhotoUrl:        a.PhotoURL,
+		UserId:          a.UserId.Hex(),
+		IsPricePerNight: a.IsPricePerNight,
+		IsManual:        a.IsManual,
 	}
 }
