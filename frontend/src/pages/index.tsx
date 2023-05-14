@@ -57,6 +57,23 @@ export default function Home() {
                 num_guests: data.num_guests,
                 price: data.price,
             });
+        },
+        {
+            onSuccess: () => {
+                enqueueSnackbar("Reservation created", {
+                    variant: "success",
+                });
+                router.push("/reservation");
+            },
+            onError(error: any, variables, context) {
+                enqueueSnackbar({
+                    message:
+                        error?.response?.data?.error ??
+                        error?.message ??
+                        "Error",
+                    variant: "error",
+                });
+            },
         }
     )
 
@@ -67,13 +84,6 @@ export default function Home() {
             end_date: query.end_date,
             num_guests: query.num_guests,
             price:price,
-        }, {
-            onSuccess: () => {
-                enqueueSnackbar("Reservation created", {
-                    variant: "success",
-                });
-                router.push("/reservation");
-            }
         })
     }
 

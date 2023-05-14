@@ -6,6 +6,7 @@ import (
 	"api.accommodation.com/src/client"
 	"api.accommodation.com/src/handler/accommodation"
 	"api.accommodation.com/src/handler/auth"
+	"api.accommodation.com/src/handler/reservation"
 	"api.accommodation.com/src/middleware"
 	"github.com/gin-gonic/gin"
 )
@@ -51,19 +52,13 @@ func ApiRouter(r *gin.RouterGroup, clients *client.Clients) {
 		auth.DeleteUserHandler(ctx, clients)
 	})
 
-	authGroup.GET("/accommodation/:id/reservation", func(ctx *gin.Context) {
-		//accommodation.GetReservationHandler(ctx, clients)
-		ctx.AbortWithStatusJSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
-	})
 	authGroup.GET("/accommodation/:id/reservation/:reservation_id", func(ctx *gin.Context) {
 		//accommodation.GetReservationHandler(ctx, clients)
 		ctx.AbortWithStatusJSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
 	})
 	authGroup.PUT("/accommodation/:id/reservation/:reservation_id", func(ctx *gin.Context) {
-		//accommodation.UpdateReservationHandler(ctx, clients)
-		ctx.AbortWithStatusJSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
+		reservation.HandleReservationStatusChange(ctx, clients)
 	})
-
 	// ----------------- HOST ROUTES -----------------
 	hostGroup := authGroup.Group("/")
 	hostGroup.Use(middleware.HasRole([]string{"H"}))
@@ -74,6 +69,10 @@ func ApiRouter(r *gin.RouterGroup, clients *client.Clients) {
 
 	hostGroup.PUT("/accommodation/:id", func(ctx *gin.Context) {
 		accommodation.UpdateAccommodationHandler(ctx, clients)
+	})
+
+	authGroup.GET("/accommodation/:id/reservation", func(ctx *gin.Context) {
+		reservation.GetReservationsForAccommodationHandler(ctx, clients)
 	})
 
 	hostGroup.PUT("/accommodation/:id/availability", func(ctx *gin.Context) {
@@ -88,8 +87,12 @@ func ApiRouter(r *gin.RouterGroup, clients *client.Clients) {
 	guestGroup.Use(middleware.HasRole([]string{"G"}))
 
 	guestGroup.POST("/accommodation/:id/reservation", func(ctx *gin.Context) {
-		//accommodation.CreateReservationHandler(ctx, clients)
-		ctx.AbortWithStatusJSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
+		reservation.CreateReservationHandler(ctx, clients)
+		//ctx.AbortWithStatusJSON(http.StatusNotImplemented, gin.H{"message": "Not implemented"})
+	})
+
+	guestGroup.GET("/reservation", func(ctx *gin.Context) {
+		reservation.GetReservationsForGuestHandler(ctx, clients)
 	})
 
 }

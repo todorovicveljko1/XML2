@@ -87,6 +87,7 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to parse end date")
 	}
+	endDate = endDate.Truncate(24 * time.Hour)
 
 	// Create reservation
 	reservation := model.Reservation{
@@ -101,7 +102,7 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 	}
 
 	//Check if there are reservations in that interval
-	affectedIntervals, err := s.CheckReservationIntervals(ctx, reservation)
+	affectedIntervals, err := s.checkReservationIntervals(ctx, reservation)
 	if err != nil {
 		log.Println("Cannot get affected intervals")
 		return nil, err
@@ -136,15 +137,24 @@ func (s *Server) ApproveReservation(parent context.Context, dto *pb.GetReservati
 	}
 
 	cursor, err := s.res_collection.Find(parent, bson.M{
+		"accommodation_id": toReserve.AccommodationId,
+		"_id":              bson.M{"$ne": id},
+		"status":           "PENDING",
 		"$or": bson.A{
 			bson.M{"$and": []bson.M{
-				{"_id": bson.M{"$ne": id}},
 				{"start_date": bson.M{"$gte": toReserve.StartDate}},
 				{"start_date": bson.M{"$lte": toReserve.EndDate}},
 			}},
 			bson.M{"$and": []bson.M{
-				{"_id": bson.M{"$ne": id}},
 				{"end_date": bson.M{"$gte": toReserve.StartDate}},
+				{"end_date": bson.M{"$lte": toReserve.EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$lte": toReserve.StartDate}},
+				{"end_date": bson.M{"$gte": toReserve.EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$gte": toReserve.StartDate}},
 				{"end_date": bson.M{"$lte": toReserve.EndDate}},
 			}},
 		},
@@ -163,9 +173,11 @@ func (s *Server) ApproveReservation(parent context.Context, dto *pb.GetReservati
 
 		_, err := s.res_collection.UpdateOne(ctx, bson.M{
 			"_id":    reservationCancel.Id,
-			"status": "PENNDING",
+			"status": "PENDING",
 		}, bson.M{
-			"status": "REJECTED",
+			"$set": bson.M{
+				"status": "AUTO_REJECTED",
+			},
 		})
 		if err != nil {
 			return nil, status.Error(codes.NotFound, "Reservation that should be cancelled, could not be cancelled")
@@ -174,9 +186,12 @@ func (s *Server) ApproveReservation(parent context.Context, dto *pb.GetReservati
 
 	res, err := s.res_collection.UpdateOne(ctx, bson.M{
 		"_id":    id,
-		"status": "PENNDING",
+		"status": "PENDING",
 	}, bson.M{
-		"status": "APPROVED",
+
+		"$set": bson.M{
+			"status": "APPROVED",
+		},
 	})
 
 	// handle error and see res if somthing is updated
@@ -205,7 +220,9 @@ func (s *Server) RejectReservation(parent context.Context, dto *pb.GetReservatio
 		"_id":    id,
 		"status": "PENDING",
 	}, bson.M{
-		"status": "REJECTED",
+		"$set": bson.M{
+			"status": "REJECTED",
+		},
 	})
 
 	// handle error and see res if somthing is updated
@@ -237,14 +254,16 @@ func (s *Server) CancelReservation(parent context.Context, dto *pb.GetReservatio
 	}
 
 	if reservation.StartDate.Before(time.Now()) {
-		return nil, status.Error(codes.DeadlineExceeded, "Canceling reservation is unavailable due to start date already passing.")
+		return nil, status.Error(codes.InvalidArgument, "Canceling reservation is unavailable due to start date already passing.")
 	}
 
 	res, err := s.res_collection.UpdateOne(ctx, bson.M{
 		"_id":    id,
 		"status": bson.M{"$in": bson.A{"APPROVED", "PENDING"}},
 	}, bson.M{
-		"status": "CANCELED",
+		"$set": bson.M{
+			"status": "CANCELED",
+		},
 	})
 
 	if err != nil {
@@ -260,12 +279,157 @@ func (s *Server) CancelReservation(parent context.Context, dto *pb.GetReservatio
 	}, nil
 }
 
-func (a *Server) CheckReservationIntervals(ctx context.Context, reservation model.Reservation) ([]*model.Reservation, error) {
+func (s *Server) GetReservationsForGuest(parent context.Context, dto *pb.IdRequest) (*pb.ReservationList, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	userId, err := primitive.ObjectIDFromHex(dto.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid user id")
+	}
+
+	cursor, err := s.res_collection.Find(ctx, bson.M{"user_id": userId})
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while fetching reservations")
+	}
+	defer cursor.Close(ctx)
+
+	reservations := []*pb.Reservation{}
+	for cursor.Next(ctx) {
+		reservation := &model.Reservation{}
+		if err = cursor.Decode(reservation); err != nil {
+			return nil, status.Error(codes.Internal, "Error while decoding reservations")
+		}
+		reservations = append(reservations, reservation.ConvertToPbReservation())
+	}
+
+	return &pb.ReservationList{
+		Reservations: reservations,
+	}, nil
+}
+func (s *Server) GetReservationsForAccommodation(parent context.Context, dto *pb.IdRequest) (*pb.ReservationList, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	accommodationId, err := primitive.ObjectIDFromHex(dto.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid accommodation id")
+	}
+
+	cursor, err := s.res_collection.Find(ctx, bson.M{"accommodation_id": accommodationId})
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while fetching reservations")
+	}
+	defer cursor.Close(ctx)
+
+	reservations := []*pb.Reservation{}
+	for cursor.Next(ctx) {
+		reservation := &model.Reservation{}
+		if err = cursor.Decode(reservation); err != nil {
+			return nil, status.Error(codes.Internal, "Error while decoding reservations")
+		}
+		reservations = append(reservations, reservation.ConvertToPbReservation())
+	}
+
+	return &pb.ReservationList{
+		Reservations: reservations,
+	}, nil
+
+}
+
+func (s *Server) FilterOutTakenAccommodations(parent context.Context, dto *pb.FilterTakenAccommodationsRequest) (*pb.IdList, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	// parse dates
+	StartDate, err := time.Parse(time.RFC3339, dto.StartDate)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse start date")
+	}
+	StartDate = StartDate.Truncate(24 * time.Hour)
+
+	EndDate, err := time.Parse(time.RFC3339, dto.EndDate)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse end date")
+	}
+	EndDate = EndDate.Truncate(24 * time.Hour)
+
+	// convert ids to object ids
+	var accommodationIds []primitive.ObjectID
+
+	for _, id := range dto.AccommodationIds {
+		accommodationId, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "Invalid accommodation id")
+		}
+		accommodationIds = append(accommodationIds, accommodationId)
+	}
+
+	cursor, err := s.res_collection.Find(ctx, bson.M{
+		"accommodation_id": bson.M{"$in": accommodationIds},
+		"status":           "APPROVED",
+		"$or": bson.A{
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$gte": StartDate}},
+				{"start_date": bson.M{"$lte": EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"end_date": bson.M{"$gte": StartDate}},
+				{"end_date": bson.M{"$lte": EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$lte": StartDate}},
+				{"end_date": bson.M{"$gte": EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$gte": StartDate}},
+				{"end_date": bson.M{"$lte": EndDate}},
+			}},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	takenAccommodationIds := []string{}
+	for cursor.Next(ctx) {
+		reservation := &model.Reservation{}
+		if err = cursor.Decode(reservation); err != nil {
+			return nil, err
+		}
+		takenAccommodationIds = append(takenAccommodationIds, reservation.AccommodationId.Hex())
+	}
+
+	log.Println(takenAccommodationIds)
+
+	// Filter out taken accommodations
+	availableAccommodationIds := []string{}
+	for _, accommodationId := range accommodationIds {
+		taken := false
+		for _, takenAccommodationId := range takenAccommodationIds {
+			if accommodationId.Hex() == takenAccommodationId {
+				taken = true
+				break
+			}
+		}
+		if !taken {
+			availableAccommodationIds = append(availableAccommodationIds, accommodationId.Hex())
+		}
+	}
+
+	return &pb.IdList{
+		Ids: availableAccommodationIds,
+	}, nil
+
+}
+
+func (a *Server) checkReservationIntervals(ctx context.Context, reservation model.Reservation) ([]*model.Reservation, error) {
 
 	affectedIntervals := []*model.Reservation{}
 	cursor, err := a.res_collection.Find(ctx, bson.M{
 		"accommodation_id": reservation.AccommodationId,
-		"status":           "APPORVED",
+		"status":           "APPROVED",
 		"$or": bson.A{
 			bson.M{"$and": []bson.M{
 				{"start_date": bson.M{"$gte": reservation.StartDate}},

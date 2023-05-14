@@ -3,13 +3,14 @@ package reservation
 import (
 	"api.accommodation.com/pb"
 	"api.accommodation.com/src/client"
+	"api.accommodation.com/src/helper"
 	"github.com/gin-gonic/gin"
 )
 
 type CreateReservationRequest struct {
 	StartDate      string  `json:"start_date" binding:"required"`
 	EndDate        string  `json:"end_date" binding:"required"`
-	NumberOfGuests int32   `json:"number_of_guests" binding:"required"`
+	NumberOfGuests int32   `json:"num_guests" binding:"required"`
 	Price          float64 `json:"price" binding:"required"`
 }
 
@@ -19,7 +20,7 @@ func CreateReservationHandler(ctx *gin.Context, clients *client.Clients) {
 	accommodationId := ctx.Param("id")
 
 	// get user id from context
-	userId, exists := ctx.Get("user_id")
+	userId, exists := ctx.Get("user")
 	if !exists {
 		ctx.AbortWithStatusJSON(401, gin.H{"message": "Unauthorized"})
 		return
@@ -35,7 +36,7 @@ func CreateReservationHandler(ctx *gin.Context, clients *client.Clients) {
 	// Get accommodation
 	accommodation, err := clients.AccommodationClient.GetAccommodation(ctx, &pb.GetAccommodationRequest{Id: accommodationId})
 	if err != nil {
-		ctx.AbortWithStatusJSON(404, gin.H{"message": "Accommodation not found"})
+		helper.PrettyGRPCError(ctx, err)
 		return
 	}
 
@@ -49,7 +50,7 @@ func CreateReservationHandler(ctx *gin.Context, clients *client.Clients) {
 		Price:           request.Price,
 	})
 	if err != nil {
-		ctx.AbortWithStatusJSON(500, gin.H{"message": "Error while creating reservation"})
+		helper.PrettyGRPCError(ctx, err)
 		return
 	}
 
@@ -59,7 +60,7 @@ func CreateReservationHandler(ctx *gin.Context, clients *client.Clients) {
 			ReservationId: reservation.Id,
 		})
 		if err != nil {
-			ctx.AbortWithStatusJSON(500, gin.H{"message": "Error while approving reservation"})
+			helper.PrettyGRPCError(ctx, err)
 			return
 		}
 	}

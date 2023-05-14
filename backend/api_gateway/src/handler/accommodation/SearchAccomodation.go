@@ -61,6 +61,35 @@ func SearchAccommodationsHandler(ctx *gin.Context, clients *client.Clients) {
 		return
 	}
 
+	if !searchAccommodationsRequest.ShowMy {
+		var accIds []string
+		for _, a := range acc.Accommodations {
+			accIds = append(accIds, a.Id)
+		}
+		// Filter out taken accommodations
+		list, err := clients.ReservationClient.FilterOutTakenAccommodations(ctx, &pb.FilterTakenAccommodationsRequest{
+			AccommodationIds: accIds,
+			StartDate:        searchAccommodationsRequest.StartDate,
+			EndDate:          searchAccommodationsRequest.EndDate,
+		})
+
+		if err != nil {
+			helper.PrettyGRPCError(ctx, err)
+			return
+		}
+		// Filter out accommodations that are not in the list
+		var filteredAcc []*pb.Accommodation
+		for _, a := range acc.Accommodations {
+			for _, id := range list.Ids {
+				if a.Id == id {
+					filteredAcc = append(filteredAcc, a)
+					break
+				}
+			}
+		}
+		acc.Accommodations = filteredAcc
+	}
+
 	ctx.JSON(200, acc)
 
 }
