@@ -79,6 +79,7 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 		Price:           dto.Price,
 	}
 
+	//Check if there are reservations in that interval
 	affectedIntervals, err := s.CheckReservationIntervals(ctx, reservation)
 	if err != nil {
 		log.Println("Cannot get affected intervals")
@@ -86,6 +87,7 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 	}
 
 	if len(affectedIntervals) != 0 {
+		return nil, status.Error(codes.Internal, "Already exists reservation at the same time")
 	}
 
 	// Insert reservation
