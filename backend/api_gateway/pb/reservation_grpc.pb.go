@@ -27,6 +27,7 @@ type ReservationServiceClient interface {
 	ApproveReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*ReservationStatus, error)
 	RejectReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*ReservationStatus, error)
 	CancelReservation(ctx context.Context, in *GetReservationRequest, opts ...grpc.CallOption) (*ReservationStatus, error)
+	FilterReservation(ctx context.Context, in *FilterRequest, opts ...grpc.CallOption) (*AccommodationIds, error)
 }
 
 type reservationServiceClient struct {
@@ -82,6 +83,15 @@ func (c *reservationServiceClient) CancelReservation(ctx context.Context, in *Ge
 	return out, nil
 }
 
+func (c *reservationServiceClient) FilterReservation(ctx context.Context, in *FilterRequest, opts ...grpc.CallOption) (*AccommodationIds, error) {
+	out := new(AccommodationIds)
+	err := c.cc.Invoke(ctx, "/ReservationService/FilterReservation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReservationServiceServer is the server API for ReservationService service.
 // All implementations must embed UnimplementedReservationServiceServer
 // for forward compatibility
@@ -91,6 +101,7 @@ type ReservationServiceServer interface {
 	ApproveReservation(context.Context, *GetReservationRequest) (*ReservationStatus, error)
 	RejectReservation(context.Context, *GetReservationRequest) (*ReservationStatus, error)
 	CancelReservation(context.Context, *GetReservationRequest) (*ReservationStatus, error)
+	FilterReservation(context.Context, *FilterRequest) (*AccommodationIds, error)
 	mustEmbedUnimplementedReservationServiceServer()
 }
 
@@ -112,6 +123,9 @@ func (UnimplementedReservationServiceServer) RejectReservation(context.Context, 
 }
 func (UnimplementedReservationServiceServer) CancelReservation(context.Context, *GetReservationRequest) (*ReservationStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CancelReservation not implemented")
+}
+func (UnimplementedReservationServiceServer) FilterReservation(context.Context, *FilterRequest) (*AccommodationIds, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FilterReservation not implemented")
 }
 func (UnimplementedReservationServiceServer) mustEmbedUnimplementedReservationServiceServer() {}
 
@@ -216,6 +230,24 @@ func _ReservationService_CancelReservation_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReservationService_FilterReservation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FilterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReservationServiceServer).FilterReservation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ReservationService/FilterReservation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReservationServiceServer).FilterReservation(ctx, req.(*FilterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ReservationService_ServiceDesc is the grpc.ServiceDesc for ReservationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -242,6 +274,10 @@ var ReservationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CancelReservation",
 			Handler:    _ReservationService_CancelReservation_Handler,
+		},
+		{
+			MethodName: "FilterReservation",
+			Handler:    _ReservationService_FilterReservation_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
