@@ -36,16 +36,13 @@ const STATUS_TO_COLOR: Record<
 
 function ShowCancleCondition(reservation: any) {
     return (
-        (reservation.status == "PENDING" ||
-        reservation.status == "APPROVED") &&
-            dayjs(reservation.start_date.split(" ")[0]) >
-                dayjs().add(1, "day")
+        (reservation.status == "PENDING" || reservation.status == "APPROVED") &&
+        dayjs(reservation.start_date.split(" ")[0]) > dayjs().add(1, "day")
     );
 }
 
 export default function Reservations() {
     const router = useRouter();
-    const { id } = router.query;
 
     const { data, isLoading, error, refetch } = useQuery(
         ["reservations"],
@@ -57,10 +54,13 @@ export default function Reservations() {
     const reservations = data?.data.reservations ?? [];
 
     const mutation = useMutation(
-        (data: { id: string; status: string }) =>
-            axios.put(`/accommodation/${id}/reservation/${data.id}`, {
-                status: data.status,
-            }),
+        (data: { id: string; status: string; accommodation_id: string }) =>
+            axios.put(
+                `/accommodation/${data.accommodation_id}/reservation/${data.id}`,
+                {
+                    status: data.status,
+                }
+            ),
         {
             onSuccess: () => {
                 enqueueSnackbar("Reservation updated", { variant: "success" });
@@ -160,7 +160,9 @@ export default function Reservations() {
                                                                 )}
                                                             </TableCell>
                                                             <TableCell>
-                                                                {row.number_of_guests}
+                                                                {
+                                                                    row.number_of_guests
+                                                                }
                                                             </TableCell>
                                                             <TableCell>
                                                                 {row.price} $
@@ -189,6 +191,8 @@ export default function Reservations() {
                                                                             onClick={() =>
                                                                                 mutation.mutate(
                                                                                     {
+                                                                                        accommodation_id:
+                                                                                            row.accommodation_id,
                                                                                         id: row.id,
                                                                                         status: "CANCELLED",
                                                                                     }
