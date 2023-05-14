@@ -15,9 +15,13 @@ import { useRouter } from "next/router";
 
 interface AccommodationCardProps {
     accommodation: Accommodation;
+    onCreateReservation: (accommodationId: string, price: number) => void;
 }
 
-export function AccommodationCard({ accommodation }: AccommodationCardProps) {
+export function AccommodationCard({
+    accommodation,
+    onCreateReservation,
+}: AccommodationCardProps) {
     const { user } = useAuth();
     const router = useRouter();
     return (
@@ -79,7 +83,17 @@ export function AccommodationCard({ accommodation }: AccommodationCardProps) {
             </CardActionArea>
             <AuthShow roles={["G"]}>
                 <CardActions sx={{ px: 2, pb: 2, float: "right" }}>
-                    <Button variant="contained" size="small">
+                    <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() =>
+                            onCreateReservation(
+                                accommodation.id,
+                                accommodation?.price ??
+                                    accommodation.default_price
+                            )
+                        }
+                    >
                         Create Reserve
                     </Button>
                 </CardActions>

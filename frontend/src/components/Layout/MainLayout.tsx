@@ -26,6 +26,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         >
                             Accomodation App
                         </Button>
+                        <AuthShow roles={["G"]}>
+                        <Button 
+                            onClick={() => router.push("/reservation")}
+                            sx={{ color: "white" }}
+                        >
+                            Reservations
+                        </Button>
+                        </AuthShow>
                     </Stack>
                     {isLoading && <span>Loading...</span>}
                     {!isLoading &&

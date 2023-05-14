@@ -1,0 +1,5 @@
+package reservation
+
+func HandleReservationStatusChange() {
+
+}

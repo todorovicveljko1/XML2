@@ -8,8 +8,9 @@ import { AuthShow, useAuth } from "@/providers/authProvider";
 import { Alert, Container, Fab, Grid } from "@mui/material";
 import dayjs from "dayjs";
 import { useRouter } from "next/router";
+import { enqueueSnackbar } from "notistack";
 import { useEffect, useState } from "react";
-import { useQuery } from "react-query";
+import { useMutation, useQuery } from "react-query";
 
 const DEFAULT_QUERY = {
     location: "",
@@ -47,6 +48,35 @@ export default function Home() {
             keepPreviousData: true,
         }
     );
+
+    const createReservationMutation = useMutation(
+        (data: any) => {
+            return axios.post(`/accommodation/${data.accommodationId}/reservation`, {
+                start_date: dayjs(data.start_date).toISOString(),
+                end_date: dayjs(data.end_date).toISOString(),
+                num_guests: data.num_guests,
+                price: data.price,
+            });
+        }
+    )
+
+    const handleCreateReservation = (accommodationId: string, price:number) => {
+        createReservationMutation.mutate({
+            accommodationId: accommodationId,
+            start_date: query.start_date,
+            end_date: query.end_date,
+            num_guests: query.num_guests,
+            price:price,
+        }, {
+            onSuccess: () => {
+                enqueueSnackbar("Reservation created", {
+                    variant: "success",
+                });
+                router.push("/reservation");
+            }
+        })
+    }
+
     return (
         <MainLayout>
             <Container sx={{ pt: 3, px: 3 }} maxWidth={false}>
@@ -71,12 +101,12 @@ export default function Home() {
                                         key={accommodation.id}
                                         item
                                         xs={12}
-                                        sm={6}
                                         md={4}
                                         lg={3}
                                     >
                                         <AccommodationCard
                                             accommodation={accommodation}
+                                            onCreateReservation={handleCreateReservation}
                                         />
                                     </Grid>
                                 )
