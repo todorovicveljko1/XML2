@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"reservation.accommodation.com/config"
 	"reservation.accommodation.com/pb"
 	"reservation.accommodation.com/src/db"
@@ -40,17 +39,26 @@ func (s *Server) Stop() {
 	}
 }
 
-func (s *Server) GetReservation(context.Context, *pb.GetReservationRequest) (*pb.Reservation, error) {
-	return &pb.Reservation{
-		Id:              "1",
-		UserId:          "1",
-		AccommodationId: "1",
-		StartDate:       timestamppb.Now(),
-		EndDate:         timestamppb.Now(),
-		Status:          "CREATED",
-		Price:           1000,
-	}, nil
-	//return nil, status.Errorf(codes.Unimplemented, "method GetReservation not implemented")
+func (s *Server) GetReservation(parent context.Context, dto *pb.GetReservationRequest) (*pb.Reservation, error) {
+	var reservation model.Reservation
+
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	reservationId, err := primitive.ObjectIDFromHex(dto.ReservationId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while fetching reservation")
+	}
+
+	err = s.res_collection.FindOne(ctx, bson.M{"_id": reservationId}).Decode(&reservation)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, status.Error(codes.NotFound, "Reservation not found")
+		}
+		return nil, status.Error(codes.Internal, "Error while fetching reservation")
+	}
+
+	return reservation.ConvertToPbReservation(), nil
 }
 func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReservationRequest) (*pb.Reservation, error) {
 	// Create timeout context
