@@ -17,12 +17,12 @@ service ReservationService{
     rpc ApproveReservation(GetReservationRequest) returns (ReservationStatus);
     rpc RejectReservation(GetReservationRequest) returns (ReservationStatus);
     rpc CancelReservation(GetReservationRequest) returns (ReservationStatus);
-    rpc FilterReservation(FilterRequest)return (AccommodationIds);
+    rpc FilterReservation(FilterRequest) returns (AccommodationIds);
 }
 
 message FilterRequest{
 
-    repeated accommodation_ids=3;
+    repeated string accommodation_ids = 3;
     string start_date = 4;
     string end_date = 5;
 
@@ -30,7 +30,7 @@ message FilterRequest{
 
 message AccommodationIds{
 
-        repeated accommodation_ids=3;
+    repeated string accommodation_ids = 3;
 }
 
 message GetReservationRequest{
