@@ -61,6 +61,7 @@ func (s *Server) GetReservation(parent context.Context, dto *pb.GetReservationRe
 
 	return reservation.ConvertToPbReservation(), nil
 }
+
 func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReservationRequest) (*pb.Reservation, error) {
 	// Create timeout context
 	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
@@ -81,8 +82,8 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 		Id:              primitive.NewObjectID(),
 		UserId:          userId,
 		AccommodationId: accommodationId,
-		StartDate:       primitive.NewDateTimeFromTime(dto.StartDate.AsTime()),
-		EndDate:         primitive.NewDateTimeFromTime(dto.EndDate.AsTime()),
+		StartDate:       dto.StartDate.AsTime(),
+		EndDate:         dto.EndDate.AsTime(),
 		Status:          "PENNDING",
 		Price:           dto.Price,
 	}
@@ -108,13 +109,55 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 }
 
 func (s *Server) ApproveReservation(parent context.Context, dto *pb.GetReservationRequest) (*pb.ReservationStatus, error) {
-
+	var toReserve model.Reservation
 	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 	defer cancel()
 
 	id, err := primitive.ObjectIDFromHex(dto.ReservationId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "Invalid reservation id")
+	}
+
+	err = s.res_collection.FindOne(ctx, bson.M{"_id": id}).Decode(&toReserve)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "Reservation not found")
+	}
+
+	cursor, err := s.res_collection.Find(parent, bson.M{
+		"$or": bson.A{
+			bson.M{"$and": []bson.M{
+				{"_id": bson.M{"$ne": id}},
+				{"start_date": bson.M{"$gte": toReserve.StartDate}},
+				{"start_date": bson.M{"$lte": toReserve.EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"_id": bson.M{"$ne": id}},
+				{"end_date": bson.M{"$gte": toReserve.StartDate}},
+				{"end_date": bson.M{"$lte": toReserve.EndDate}},
+			}},
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		reservationCancel := &model.Reservation{}
+		if err = cursor.Decode(reservationCancel); err != nil {
+			return nil, err
+		}
+
+		_, err := s.res_collection.UpdateOne(ctx, bson.M{
+			"_id":    reservationCancel.Id,
+			"status": "PENNDING",
+		}, bson.M{
+			"status": "REJECTED",
+		})
+		if err != nil {
+			return nil, status.Error(codes.NotFound, "Reservation that should be cancelled, could not be cancelled")
+		}
 	}
 
 	res, err := s.res_collection.UpdateOne(ctx, bson.M{
