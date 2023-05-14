@@ -284,3 +284,65 @@ func (a *Server) CheckReservationIntervals(ctx context.Context, reservation mode
 	}
 	return affectedIntervals, nil
 }
+
+func (s *Server) FilterReservation(ctx context.Context, dto *pb.FilterRequest) ([]*pb.AccommodationIds, error) {
+
+	// parser dates
+	startDate, err := time.Parse(time.RFC3339, *dto.StartDate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to parse start date")
+	}
+	startDate = startDate.Truncate(24 * time.Hour)
+	endDate, err := time.Parse(time.RFC3339, *dto.EndDate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to parse end date")
+	}
+	endDate = endDate.Truncate(24 * time.Hour)
+	// create bson filter
+	filter := bson.M{}
+	if dto.accommodation_ids != nil && len(dto.accommodation_ids) != 0 && dto.accommodation_ids[0] != "" {
+		filter["accommodation_id"] = bson.M{"$in": dto.accommodation_ids}
+	}
+
+	// log filter
+	log.Println(filter)
+	// Find the accommodations
+	cursor, err := s.res_collection.Find(ctx, filter)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find accommodations: %v", err)
+	}
+
+	var accommodation_ids []primitive.ObjectID
+	err = cursor.All(ctx, &accommodation_ids)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to read reservations: %v", err)
+	}
+
+	var acc []primitive.ObjectID
+	for _, accommodation_id := range accommodation_ids {
+
+		//making temp reservation
+		reservation := model.Reservation{
+			Id:              primitive.NewObjectID(),
+			UserId:          primitive.NewObjectID(),
+			AccommodationId: accommodation_id,
+			StartDate:       startDate,
+			EndDate:         endDate,
+			Status:          "PENNDING",
+			Price:           1,
+		}
+
+		affectedIntervals, err := s.CheckReservationIntervals(ctx, reservation)
+		if err != nil {
+			log.Println("Cannot get affected intervals")
+			return nil, err
+		}
+
+		if len(affectedIntervals) == 0 {
+			acc = append(acc, accommodation_id)
+		}
+
+	}
+	return acc, nil
+
+}
