@@ -1,14 +1,12 @@
 syntax = "proto3";
 option go_package = "./pb";
 
-import "google/protobuf/timestamp.proto";
-
 message Reservation{
     string id = 1;
     string user_id = 2;
     string accommodation_id = 3;
-    google.protobuf.Timestamp start_date = 4;
-    google.protobuf.Timestamp end_date = 5;
+    string start_date = 4;
+    string end_date = 5;
     double price = 6;
     string status = 7;
 }
@@ -28,8 +26,8 @@ message GetReservationRequest{
 message CreateReservationRequest{
     string user_id = 1;
     string accommodation_id = 2;
-    google.protobuf.Timestamp start_date = 3;
-    google.protobuf.Timestamp end_date = 4;
+    string start_date = 3;
+    string end_date = 4;
     double price = 5;
 }
 

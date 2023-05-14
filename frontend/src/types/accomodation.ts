@@ -10,6 +10,8 @@ export interface Accommodation {
     user_id: string;
     is_price_per_night: boolean;
     is_manual: boolean;
+
+    price?: number;
 }
 
 export interface CreateAccomodationRequest {

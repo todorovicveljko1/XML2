@@ -39,6 +39,7 @@ export function CreateAccomodationForm() {
                     message: "Succesfully created accommodation",
                     variant: "success",
                 });
+                router.push("/")
             },
             onError(error: any, variables, context) {
                 enqueueSnackbar({
@@ -126,8 +127,8 @@ export function CreateAccomodationForm() {
                 name="is_manual"
                 label="Reservations are manually managed?"
             />
-            <Stack direction={"row"} spacing={2}  justifyContent={"end"}>
-                <Button onClick={() => router.back()}>Cancle</Button>
+            <Stack direction={"row"} spacing={2}  justifyContent={"space-between"}>
+                <Button onClick={() => router.back()}>Back</Button>
                 <LoadingButton
                     variant="contained"
                     color="primary"

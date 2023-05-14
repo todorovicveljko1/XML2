@@ -51,12 +51,12 @@ export default function AccommodationPage() {
                                     accommodation={accommodation}
                                 />
                                 <AvailableInterval
-                                    accommodationId={accommodation.id}
+                                    accommodation={accommodation}
                                     intervals={available_intervals}
                                     onUpdate={()=>refetch()}
                                 />
                                 <PriceIntervalCard
-                                    accommodationId={accommodation.id}
+                                    accommodation={accommodation}
                                     intervals={price_intervals}
                                     onUpdate={()=>refetch()}
                                 />

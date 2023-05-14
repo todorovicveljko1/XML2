@@ -1,12 +1,12 @@
 package accommodation
 
 import (
-	"log"
 	"strings"
 
 	"api.accommodation.com/pb"
 	"api.accommodation.com/src/client"
 	"api.accommodation.com/src/helper"
+	"api.accommodation.com/src/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,19 +43,17 @@ func SearchAccommodationsHandler(ctx *gin.Context, clients *client.Clients) {
 		})
 		return
 	}
-
 	searchAccommodationsRequestProto := searchAccommodationsRequest.ToProto("")
 	if searchAccommodationsRequest.ShowMy {
-		userId, exists := ctx.Get("user")
-		if !exists {
+		userId, err := middleware.GetUserFromHeader(ctx, clients)
+		if err != nil {
 			ctx.AbortWithStatusJSON(400, gin.H{
 				"error": "Invalid request",
 			})
 			return
 		}
-		searchAccommodationsRequestProto.UserId = userId.(string)
+		searchAccommodationsRequestProto.UserId = *userId
 	}
-	log.Println(searchAccommodationsRequest)
 	acc, err := clients.AccommodationClient.SearchAccommodations(ctx, searchAccommodationsRequestProto)
 
 	if err != nil {

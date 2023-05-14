@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"reservation.accommodation.com/config"
 	"reservation.accommodation.com/pb"
 	"reservation.accommodation.com/src/db"
@@ -45,8 +44,8 @@ func (s *Server) GetReservation(context.Context, *pb.GetReservationRequest) (*pb
 		Id:              "1",
 		UserId:          "1",
 		AccommodationId: "1",
-		StartDate:       timestamppb.Now(),
-		EndDate:         timestamppb.Now(),
+		StartDate:       time.Now(),
+		EndDate:         time.Now(),
 		Status:          "CREATED",
 		Price:           1000,
 	}, nil
@@ -72,8 +71,8 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 		Id:              primitive.NewObjectID(),
 		UserId:          userId,
 		AccommodationId: accommodationId,
-		StartDate:       primitive.NewDateTimeFromTime(dto.StartDate.AsTime()),
-		EndDate:         primitive.NewDateTimeFromTime(dto.EndDate.AsTime()),
+		StartDate:       dto.StartDate.AsTime(),
+		EndDate:         dto.EndDate.AsTime(),
 		Status:          "PENNDING",
 		Price:           dto.Price,
 	}

@@ -8,36 +8,51 @@ import { AuthShow, useAuth } from "@/providers/authProvider";
 import { Alert, Container, Fab, Grid } from "@mui/material";
 import dayjs from "dayjs";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "react-query";
+
+const DEFAULT_QUERY = {
+    location: "",
+    num_guests: 1,
+    start_date: dayjs(),
+    end_date: dayjs().add(6, "day"),
+    amenity: [],
+    show_my: false,
+};
+
+function BuildUrlQuert(data: any) {
+    return (
+        "?" +
+        buildGetQuery({
+            ...data,
+            start_date:
+                data.start_date &&
+                dayjs(data.start_date as string).toISOString(),
+            end_date:
+                data.end_date && dayjs(data.end_date as string).toISOString(),
+            show_my: data.show_my ? 1 : 0,
+        })
+    );
+}
 
 export default function Home() {
     const router = useRouter();
-    const [query, setQuery] = useState("");
+    const [query, setQuery] = useState<any>(DEFAULT_QUERY);
     const { data, isLoading, error } = useQuery(
         ["accommodation", query],
         () => {
-            return axios.get("/accommodation" + query);
+            return axios.get("/accommodation" + BuildUrlQuert(query));
+        },
+        {
+            keepPreviousData: true,
         }
     );
     return (
         <MainLayout>
-            <Container sx={{ pt: 3, px: 3}} maxWidth={false}>
+            <Container sx={{ pt: 3, px: 3 }} maxWidth={false}>
                 <AccommodationFilterForm
-                    onFilter={(data) =>
-                        setQuery(
-                            "?" +
-                                buildGetQuery({
-                                    ...data,
-                                    start_date: dayjs(
-                                        data.start_date
-                                    ).toISOString(),
-                                    end_date: dayjs(
-                                        data.end_date
-                                    ).toISOString(),
-                                })
-                        )
-                    }
+                    isLoading={isLoading}
+                    onFilter={(data) => setQuery(data)}
                 />
             </Container>
             {isLoading ? (
@@ -47,8 +62,8 @@ export default function Home() {
                     Error while fetching accommodations
                 </Alert>
             ) : (
-                <Grid p={3} spacing={3} container>
-                    {data && (
+                <Grid p={3} spacing={3} container alignItems="stretch">
+                    {data?.data?.accommodations ? (
                         <>
                             {data.data.accommodations.map(
                                 (accommodation: any) => (
@@ -67,6 +82,12 @@ export default function Home() {
                                 )
                             )}
                         </>
+                    ) : (
+                        <Grid item xs={12}>
+                            <Alert severity="info">
+                                No accommodations found
+                            </Alert>
+                        </Grid>
                     )}
                 </Grid>
             )}

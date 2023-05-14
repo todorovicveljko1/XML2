@@ -181,3 +181,72 @@ func (a *PriceIntervalManager) AddPriceInterval(ctx context.Context, newInterval
 	return res.InsertedID, nil
 
 }
+
+// calculate price for given start and end date, also for each accomodation provided
+func (a *PriceIntervalManager) PriceAccommodationByPriceIntervals(ctx context.Context, accommodation []*model.Accommodation, startDate time.Time, endDate time.Time, numberOfGuests int) ([]*model.Accommodation, error) {
+	priceIntervals := []*model.PriceInterval{}
+	// get accommodationIds from accommodation
+	accommodationIds := []primitive.ObjectID{}
+	for _, acc := range accommodation {
+		accommodationIds = append(accommodationIds, acc.Id)
+	}
+	//cursor with sorted start_date and get intervals that are in given period beetwen start and end date
+	cursor, err := a.price_interval_collection.Find(ctx, bson.M{
+		"accommodation_id": bson.M{"$in": accommodationIds},
+		"$or": bson.A{
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$gte": startDate}},
+				{"start_date": bson.M{"$lte": endDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"end_date": bson.M{"$gte": startDate}},
+				{"end_date": bson.M{"$lte": endDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$lte": startDate}},
+				{"end_date": bson.M{"$gte": endDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$gte": startDate}},
+				{"end_date": bson.M{"$lte": endDate}},
+			}},
+		},
+	}, options.Find().SetSort(bson.D{{Key: "start_date", Value: 1}}))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		priceInterval := &model.PriceInterval{}
+		if err = cursor.Decode(priceInterval); err != nil {
+			return nil, err
+		}
+		priceIntervals = append(priceIntervals, priceInterval)
+	}
+	// calculate price for each accommodation, go through each day between start and end date and sum price for each day that belong for that interval or add default price from accommodation
+	for _, acc := range accommodation {
+		acc.Price = 0
+		for d := startDate; d.Before(endDate.AddDate(0, 0, 1)); d = d.AddDate(0, 0, 1) {
+			added := false
+			for _, interval := range priceIntervals {
+				if interval.AccommodationId != acc.Id {
+					continue
+				}
+				if (d.After(interval.StartDate) && d.Before(interval.EndDate)) || d.Equal(interval.StartDate) || d.Equal(interval.EndDate) {
+					acc.Price += interval.Price
+					added = true
+					break
+				}
+			}
+			if added == false {
+				acc.Price += acc.DefaultPrice
+			}
+		}
+		if !acc.IsPricePerNight {
+			acc.Price = acc.Price * float64(numberOfGuests)
+		}
+
+	}
+	return accommodation, nil
+
+}

@@ -16,6 +16,8 @@ message Accommodation {
   string user_id = 9;
   bool is_price_per_night = 10;
   bool is_manual = 11;
+
+  optional double price = 12;
 }
 
 message AvailableInterval {

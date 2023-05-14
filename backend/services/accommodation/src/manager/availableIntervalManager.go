@@ -186,3 +186,56 @@ func (a *AvailableIntervalManager) AddAvailableInterval(ctx context.Context, new
 	return "Success", nil
 
 }
+
+// filter accommodation ids by available intervals so that we can get only accommodations that are available in given period
+func (a *AvailableIntervalManager) FilterAccommodationIdsByAvailableIntervals(ctx context.Context, accommodationIds []primitive.ObjectID, startDate time.Time, endDate time.Time) ([]primitive.ObjectID, error) {
+	// Find the intervals
+	availableIntervals := []*model.AvailableInterval{}
+	//cursor with sorted start_date and get intervals that are in given period beetwen start and end date
+	cursor, err := a.available_interval_collection.Find(ctx, bson.M{
+		"accommodation_id": bson.M{"$in": accommodationIds},
+		"$or": bson.A{
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$gte": startDate}},
+				{"start_date": bson.M{"$lte": endDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"end_date": bson.M{"$gte": startDate}},
+				{"end_date": bson.M{"$lte": endDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$lte": startDate}},
+				{"end_date": bson.M{"$gte": endDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$gte": startDate}},
+				{"end_date": bson.M{"$lte": endDate}},
+			}},
+		},
+	}, options.Find().SetSort(bson.D{{Key: "start_date", Value: 1}}))
+
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		availableInterval := &model.AvailableInterval{}
+		if err = cursor.Decode(availableInterval); err != nil {
+			return nil, err
+		}
+		availableIntervals = append(availableIntervals, availableInterval)
+	}
+	// remove all accommodation ids that are not available in given period
+	for _, availableInterval := range availableIntervals {
+		for i, accommodationId := range accommodationIds {
+			if accommodationId == availableInterval.AccommodationId {
+				if !availableInterval.IsAvailable {
+					accommodationIds = append(accommodationIds[:i], accommodationIds[i+1:]...)
+				}
+				break
+			}
+		}
+	}
+	return accommodationIds, nil
+
+}
