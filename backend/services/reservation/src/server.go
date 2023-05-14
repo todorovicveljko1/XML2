@@ -2,6 +2,7 @@ package src
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -78,6 +79,15 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 		Price:           dto.Price,
 	}
 
+	affectedIntervals, err := s.CheckReservationIntervals(ctx, reservation)
+	if err != nil {
+		log.Println("Cannot get affected intervals")
+		return nil, err
+	}
+
+	if len(affectedIntervals) != 0 {
+	}
+
 	// Insert reservation
 	_, err = s.res_collection.InsertOne(ctx, reservation)
 	if err != nil {
@@ -122,4 +132,41 @@ func (s *Server) RejectReservation(context.Context, *pb.GetReservationRequest) (
 }
 func (s *Server) CancelReservation(context.Context, *pb.GetReservationRequest) (*pb.ReservationStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CancelReservation not implemented")
+}
+
+func (a *Server) CheckReservationIntervals(ctx context.Context, reservation model.Reservation) ([]*model.Reservation, error) {
+
+	affectedIntervals := []*model.Reservation{}
+	cursor, err := a.res_collection.Find(ctx, bson.M{
+		"$or": bson.A{
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$gte": reservation.StartDate}},
+				{"start_date": bson.M{"$lte": reservation.EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"end_date": bson.M{"$gte": reservation.StartDate}},
+				{"end_date": bson.M{"$lte": reservation.EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$lte": reservation.StartDate}},
+				{"end_date": bson.M{"$gte": reservation.EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$gte": reservation.StartDate}},
+				{"end_date": bson.M{"$lte": reservation.EndDate}},
+			}},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		reservations := &model.Reservation{}
+		if err = cursor.Decode(reservations); err != nil {
+			return nil, err
+		}
+		affectedIntervals = append(affectedIntervals, reservations)
+	}
+	return affectedIntervals, nil
 }
