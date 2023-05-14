@@ -81,12 +81,10 @@ func (s *Server) GetAccommodation(parent context.Context, dto *pb.GetAccommodati
 		return nil, status.Errorf(codes.Internal, "failed to find available intervals: %v", err)
 	}
 	// Find the price intervals
-	var priceIntervals []model.PriceInterval
-	cursor, err := s.prices_collection.Find(ctx, bson.M{"accommodation_id": accId})
+	priceIntervals, err := s.price_interval_manager.GetPriceIntervalsByAccommodationId(ctx, accId)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find price intervals: %v", err)
 	}
-	cursor.All(ctx, &priceIntervals)
 
 	// Convert to proto
 	accProto := acc.ToProto()

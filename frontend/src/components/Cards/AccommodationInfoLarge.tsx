@@ -40,12 +40,14 @@ export function AccommodationInfoLarge({
                 </Stack>
                 <Stack flexWrap={"wrap"} direction={"row"}>
                     <Chip
+                        size="small"
                         color="info"
                         label={`GUESTS: ${accommodation.min_guests} - ${accommodation.max_guests}`}
                         sx={{ mt: 1, mr: 1 }}
                     />
                     {accommodation.amenity.map((amenity: string) => (
                         <Chip
+                            size="small"
                             key={amenity}
                             label={amenity}
                             sx={{ mt: 1, mr: 1 }}

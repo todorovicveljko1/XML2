@@ -36,7 +36,7 @@ func (a *PriceIntervalManager) GetPriceIntervalsByAccommodationId(ctx context.Co
 			bson.M{"start_date": bson.M{"$gte": time.Now()}},
 			bson.M{"end_date": bson.M{"$gte": time.Now()}},
 		},
-	}, options.Find().SetSort(bson.D{{"start_date", 1}}))
+	}, options.Find().SetSort(bson.D{{Key: "start_date", Value: 1}}))
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (a *PriceIntervalManager) getAffectedIntervals(ctx context.Context, priceIn
 				{"end_date": bson.M{"$lte": priceIntervals.EndDate}},
 			}},
 		},
-	})
+	}, options.Find().SetSort(bson.D{{Key: "start_date", Value: 1}}))
 	if err != nil {
 		return nil, err
 	}

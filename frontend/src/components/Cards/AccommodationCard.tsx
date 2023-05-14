@@ -48,7 +48,11 @@ export function AccommodationCard({ accommodation }: AccommodationCardProps) {
                             <Typography variant="h6" color="green">
                                 {accommodation.price
                                     ? `${accommodation.price}$ total`
-                                    : `${accommodation.default_price}$${accommodation.is_price_per_night ? "/ night" : "/ guest"}`}
+                                    : `${accommodation.default_price}$${
+                                          accommodation.is_price_per_night
+                                              ? "/ night"
+                                              : "/ guest"
+                                      }`}
                             </Typography>
                         </Stack>
                         <Typography variant="body2" color="text.secondary">
@@ -56,12 +60,14 @@ export function AccommodationCard({ accommodation }: AccommodationCardProps) {
                         </Typography>
                         <Stack flexWrap={"wrap"} direction={"row"}>
                             <Chip
+                                size="small"
                                 color="info"
                                 label={`GUESTS: ${accommodation.min_guests} - ${accommodation.max_guests}`}
                                 sx={{ mt: 1, mr: 1 }}
                             />
                             {accommodation.amenity.map((amenity) => (
                                 <Chip
+                                    size="small"
                                     key={amenity}
                                     label={amenity}
                                     sx={{ mt: 1, mr: 1 }}
