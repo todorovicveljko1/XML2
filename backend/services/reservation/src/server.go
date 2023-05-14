@@ -486,6 +486,77 @@ func (s *Server) HasActiveReservationInInterval(parent context.Context, dto *pb.
 	}, nil
 }
 
+func (s *Server) HasGuestActiveReservationInFuture(parent context.Context, dto *pb.IdRequest) (*pb.BoolResponse, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	userId, err := primitive.ObjectIDFromHex(dto.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid user id")
+	}
+
+	cursor, err := s.res_collection.Find(ctx, bson.M{
+		"user_id":  userId,
+		"status":   bson.M{"$in": bson.A{"APPROVED", "PENDING"}},
+		"end_date": bson.M{"$gte": time.Now()},
+	})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while fetching reservations")
+	}
+
+	defer cursor.Close(ctx)
+
+	hasActiveReservation := false
+	for cursor.Next(ctx) {
+		hasActiveReservation = true
+		break
+	}
+
+	return &pb.BoolResponse{
+		Value: hasActiveReservation,
+	}, nil
+
+}
+func (s *Server) HasHostActiveReservationInFuture(parent context.Context, dto *pb.IdList) (*pb.BoolResponse, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	// convert ids to object ids
+	var accommodationIds []primitive.ObjectID
+
+	for _, id := range dto.Ids {
+		accommodationId, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "Invalid accommodation id")
+		}
+		accommodationIds = append(accommodationIds, accommodationId)
+	}
+
+	cursor, err := s.res_collection.Find(ctx, bson.M{
+		"accommodation_id": bson.M{"$in": accommodationIds},
+		"status":           bson.M{"$in": bson.A{"APPROVED", "PENDING"}},
+		"end_date":         bson.M{"$gte": time.Now()},
+	})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while fetching reservations")
+	}
+
+	defer cursor.Close(ctx)
+
+	hasActiveReservation := false
+	for cursor.Next(ctx) {
+		hasActiveReservation = true
+		break
+	}
+
+	return &pb.BoolResponse{
+		Value: hasActiveReservation,
+	}, nil
+
+}
+
 // PRIVATE FUNCTIONS
 func (a *Server) checkReservationIntervals(ctx context.Context, reservation model.Reservation) ([]*model.Reservation, error) {
 

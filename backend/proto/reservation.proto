@@ -24,6 +24,9 @@ service ReservationService{
 
     rpc FilterOutTakenAccommodations(FilterTakenAccommodationsRequest) returns (IdList);
     rpc HasActiveReservationInInterval(IntervalRequest) returns (BoolResponse);
+
+    rpc HasGuestActiveReservationInFuture(IdRequest) returns (BoolResponse);
+    rpc HasHostActiveReservationInFuture(IdList) returns (BoolResponse);
 }
 
 message GetReservationRequest{

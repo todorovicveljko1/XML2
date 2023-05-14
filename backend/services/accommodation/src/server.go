@@ -342,3 +342,58 @@ func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequ
 	return &pb.AccommodationList{Accommodations: accommodationsProto}, nil
 
 }
+
+func (s *Server) DeleteAccommodation(parent context.Context, dto *pb.GetAccommodationRequestWithUser) (*pb.ResponseMessage, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	accId, err := primitive.ObjectIDFromHex(dto.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to convert accommodation id")
+	}
+	userId, err := primitive.ObjectIDFromHex(dto.UserId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to convert user id")
+	}
+
+	// Find the accommodation
+	res, err := s.acc_collection.DeleteOne(ctx, bson.M{"_id": accId, "user_id": userId})
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "failed to find accommodation: %v", err)
+	}
+	if res.DeletedCount == 0 {
+		return nil, status.Errorf(codes.NotFound, "failed to find accommodation: %v", err)
+	}
+
+	return &pb.ResponseMessage{Message: accId.Hex()}, nil
+}
+
+func (s *Server) GetAccommodationsForHost(parent context.Context, dto *pb.GetAccommodationRequest) (*pb.AccommodationList, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	userId, err := primitive.ObjectIDFromHex(dto.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert user id")
+	}
+
+	// Find the accommodations
+	cursor, err := s.acc_collection.Find(ctx, bson.M{"user_id": userId})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find accommodations: %v", err)
+	}
+
+	var accommodations []*model.Accommodation
+	// read cursor
+	if err = cursor.All(ctx, &accommodations); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to read accommodations: %v", err)
+	}
+
+	// convert to proto
+	accommodationsProto := make([]*pb.Accommodation, len(accommodations))
+	for i, accommodation := range accommodations {
+		accommodationsProto[i] = accommodation.ToProto()
+	}
+
+	return &pb.AccommodationList{Accommodations: accommodationsProto}, nil
+}

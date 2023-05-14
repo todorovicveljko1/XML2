@@ -46,8 +46,17 @@ service AccommodationService {
   rpc AddAccommodationAvailability(AddAvailabilityRequest) returns (ResponseMessage);
   rpc AddAccommodationPrice(AddPriceRequest) returns (ResponseMessage);
   rpc SearchAccommodations(SearchRequest) returns (AccommodationList);
+  rpc DeleteAccommodation(GetAccommodationRequestWithUser) returns (ResponseMessage);
+
+  rpc GetAccommodationsForHost(GetAccommodationRequest) returns (AccommodationList);
+
 }
 
+
+message GetAccommodationRequestWithUser {
+  string id = 1;
+  string user_id = 2;
+}
 
 message GetAccommodationRequest {
   string id = 1;

@@ -19,15 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ReservationService_GetReservation_FullMethodName                  = "/ReservationService/GetReservation"
-	ReservationService_CreateReservation_FullMethodName               = "/ReservationService/CreateReservation"
-	ReservationService_ApproveReservation_FullMethodName              = "/ReservationService/ApproveReservation"
-	ReservationService_RejectReservation_FullMethodName               = "/ReservationService/RejectReservation"
-	ReservationService_CancelReservation_FullMethodName               = "/ReservationService/CancelReservation"
-	ReservationService_GetReservationsForGuest_FullMethodName         = "/ReservationService/GetReservationsForGuest"
-	ReservationService_GetReservationsForAccommodation_FullMethodName = "/ReservationService/GetReservationsForAccommodation"
-	ReservationService_FilterOutTakenAccommodations_FullMethodName    = "/ReservationService/FilterOutTakenAccommodations"
-	ReservationService_HasActiveReservationInInterval_FullMethodName  = "/ReservationService/HasActiveReservationInInterval"
+	ReservationService_GetReservation_FullMethodName                    = "/ReservationService/GetReservation"
+	ReservationService_CreateReservation_FullMethodName                 = "/ReservationService/CreateReservation"
+	ReservationService_ApproveReservation_FullMethodName                = "/ReservationService/ApproveReservation"
+	ReservationService_RejectReservation_FullMethodName                 = "/ReservationService/RejectReservation"
+	ReservationService_CancelReservation_FullMethodName                 = "/ReservationService/CancelReservation"
+	ReservationService_GetReservationsForGuest_FullMethodName           = "/ReservationService/GetReservationsForGuest"
+	ReservationService_GetReservationsForAccommodation_FullMethodName   = "/ReservationService/GetReservationsForAccommodation"
+	ReservationService_FilterOutTakenAccommodations_FullMethodName      = "/ReservationService/FilterOutTakenAccommodations"
+	ReservationService_HasActiveReservationInInterval_FullMethodName    = "/ReservationService/HasActiveReservationInInterval"
+	ReservationService_HasGuestActiveReservationInFuture_FullMethodName = "/ReservationService/HasGuestActiveReservationInFuture"
+	ReservationService_HasHostActiveReservationInFuture_FullMethodName  = "/ReservationService/HasHostActiveReservationInFuture"
 )
 
 // ReservationServiceClient is the client API for ReservationService service.
@@ -43,6 +45,8 @@ type ReservationServiceClient interface {
 	GetReservationsForAccommodation(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*ReservationList, error)
 	FilterOutTakenAccommodations(ctx context.Context, in *FilterTakenAccommodationsRequest, opts ...grpc.CallOption) (*IdList, error)
 	HasActiveReservationInInterval(ctx context.Context, in *IntervalRequest, opts ...grpc.CallOption) (*BoolResponse, error)
+	HasGuestActiveReservationInFuture(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*BoolResponse, error)
+	HasHostActiveReservationInFuture(ctx context.Context, in *IdList, opts ...grpc.CallOption) (*BoolResponse, error)
 }
 
 type reservationServiceClient struct {
@@ -134,6 +138,24 @@ func (c *reservationServiceClient) HasActiveReservationInInterval(ctx context.Co
 	return out, nil
 }
 
+func (c *reservationServiceClient) HasGuestActiveReservationInFuture(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*BoolResponse, error) {
+	out := new(BoolResponse)
+	err := c.cc.Invoke(ctx, ReservationService_HasGuestActiveReservationInFuture_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reservationServiceClient) HasHostActiveReservationInFuture(ctx context.Context, in *IdList, opts ...grpc.CallOption) (*BoolResponse, error) {
+	out := new(BoolResponse)
+	err := c.cc.Invoke(ctx, ReservationService_HasHostActiveReservationInFuture_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReservationServiceServer is the server API for ReservationService service.
 // All implementations must embed UnimplementedReservationServiceServer
 // for forward compatibility
@@ -147,6 +169,8 @@ type ReservationServiceServer interface {
 	GetReservationsForAccommodation(context.Context, *IdRequest) (*ReservationList, error)
 	FilterOutTakenAccommodations(context.Context, *FilterTakenAccommodationsRequest) (*IdList, error)
 	HasActiveReservationInInterval(context.Context, *IntervalRequest) (*BoolResponse, error)
+	HasGuestActiveReservationInFuture(context.Context, *IdRequest) (*BoolResponse, error)
+	HasHostActiveReservationInFuture(context.Context, *IdList) (*BoolResponse, error)
 	mustEmbedUnimplementedReservationServiceServer()
 }
 
@@ -180,6 +204,12 @@ func (UnimplementedReservationServiceServer) FilterOutTakenAccommodations(contex
 }
 func (UnimplementedReservationServiceServer) HasActiveReservationInInterval(context.Context, *IntervalRequest) (*BoolResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HasActiveReservationInInterval not implemented")
+}
+func (UnimplementedReservationServiceServer) HasGuestActiveReservationInFuture(context.Context, *IdRequest) (*BoolResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HasGuestActiveReservationInFuture not implemented")
+}
+func (UnimplementedReservationServiceServer) HasHostActiveReservationInFuture(context.Context, *IdList) (*BoolResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HasHostActiveReservationInFuture not implemented")
 }
 func (UnimplementedReservationServiceServer) mustEmbedUnimplementedReservationServiceServer() {}
 
@@ -356,6 +386,42 @@ func _ReservationService_HasActiveReservationInInterval_Handler(srv interface{},
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReservationService_HasGuestActiveReservationInFuture_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReservationServiceServer).HasGuestActiveReservationInFuture(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReservationService_HasGuestActiveReservationInFuture_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReservationServiceServer).HasGuestActiveReservationInFuture(ctx, req.(*IdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReservationService_HasHostActiveReservationInFuture_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IdList)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReservationServiceServer).HasHostActiveReservationInFuture(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReservationService_HasHostActiveReservationInFuture_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReservationServiceServer).HasHostActiveReservationInFuture(ctx, req.(*IdList))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ReservationService_ServiceDesc is the grpc.ServiceDesc for ReservationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -398,6 +464,14 @@ var ReservationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "HasActiveReservationInInterval",
 			Handler:    _ReservationService_HasActiveReservationInInterval_Handler,
+		},
+		{
+			MethodName: "HasGuestActiveReservationInFuture",
+			Handler:    _ReservationService_HasGuestActiveReservationInFuture_Handler,
+		},
+		{
+			MethodName: "HasHostActiveReservationInFuture",
+			Handler:    _ReservationService_HasHostActiveReservationInFuture_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

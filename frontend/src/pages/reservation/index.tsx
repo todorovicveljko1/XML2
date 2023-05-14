@@ -36,10 +36,10 @@ const STATUS_TO_COLOR: Record<
 
 function ShowCancleCondition(reservation: any) {
     return (
-        reservation.status == "PENDING" ||
-        (reservation.status == "APPROVED" &&
+        (reservation.status == "PENDING" ||
+        reservation.status == "APPROVED") &&
             dayjs(reservation.start_date.split(" ")[0]) >
-                dayjs().add(1, "day"))
+                dayjs().add(1, "day")
     );
 }
 
