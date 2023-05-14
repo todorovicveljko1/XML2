@@ -190,10 +190,12 @@ func (s *Server) AddAccommodationAvailability(parent context.Context, dto *pb.Ad
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to parse start date")
 	}
+	startDate = startDate.Truncate(24 * time.Hour)
 	endDate, err := time.Parse(time.RFC3339, dto.Availability.EndDate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to parse end date")
 	}
+	endDate = endDate.Truncate(24 * time.Hour)
 
 	res, err := s.available_interval_manager.AddAvailableInterval(ctx, &model.AvailableInterval{
 		Id:              primitive.NewObjectID(),
@@ -224,10 +226,12 @@ func (s *Server) AddAccommodationPrice(parent context.Context, dto *pb.AddPriceR
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to parse start date")
 	}
+	startDate = startDate.Truncate(24 * time.Hour)
 	endDate, err := time.Parse(time.RFC3339, dto.Price.EndDate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to parse end date")
 	}
+	endDate = endDate.Truncate(24 * time.Hour)
 
 	// Save the price interval
 	res, err := s.price_interval_manager.AddPriceInterval(ctx, &model.PriceInterval{
@@ -249,10 +253,19 @@ func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequ
 	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 	defer cancel()
 
+	// parser dates
+	startDate, err := time.Parse(time.RFC3339, *dto.StartDate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to parse start date")
+	}
+	startDate = startDate.Truncate(24 * time.Hour)
+	endDate, err := time.Parse(time.RFC3339, *dto.EndDate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to parse end date")
+	}
+	endDate = endDate.Truncate(24 * time.Hour)
 	// create bson filter
 	filter := bson.M{}
-
-	// log dto
 
 	if dto.Location != nil && *dto.Location != "" {
 		// regex contains
@@ -260,8 +273,8 @@ func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequ
 
 	}
 	if dto.NumGuests != nil && *dto.NumGuests != 0 {
-		filter["min_guests"] = bson.M{"$lte": dto.NumGuests}
-		filter["max_guests"] = bson.M{"$gte": dto.NumGuests}
+		filter["min_guests"] = bson.M{"$lte": *dto.NumGuests}
+		filter["max_guests"] = bson.M{"$gte": *dto.NumGuests}
 	}
 	if dto.Amenity != nil && len(dto.Amenity) != 0 && dto.Amenity[0] != "" {
 		filter["amenity"] = bson.M{"$in": dto.Amenity}
@@ -275,25 +288,59 @@ func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequ
 	}
 	// log filter
 	log.Println(filter)
-	// TODO: date filtering
-
 	// Find the accommodations
 	cursor, err := s.acc_collection.Find(ctx, filter)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find accommodations: %v", err)
 	}
 
-	// Convert to proto
-	var accommodations []*pb.Accommodation
-	for cursor.Next(ctx) {
-		var acc model.Accommodation
-		err := cursor.Decode(&acc)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to decode accommodation: %v", err)
-		}
-		accommodations = append(accommodations, acc.ToProto())
+	var accommodations []*model.Accommodation
+	// read cursor
+	if err = cursor.All(ctx, &accommodations); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to read accommodations: %v", err)
 	}
 
-	return &pb.AccommodationList{Accommodations: accommodations}, nil
+	if dto.ShowMy {
+		// convert to proto
+		accommodationsProto := make([]*pb.Accommodation, len(accommodations))
+		for i, accommodation := range accommodations {
+			accommodationsProto[i] = accommodation.ToProto()
+		}
+		return &pb.AccommodationList{Accommodations: accommodationsProto}, nil
+	}
+	// filter accommodations by available intervals
+	var accommodationIds []primitive.ObjectID
+	for _, accommodation := range accommodations {
+		accommodationIds = append(accommodationIds, accommodation.Id)
+	}
+	accommodationIds, err = s.available_interval_manager.FilterAccommodationIdsByAvailableIntervals(ctx, accommodationIds, startDate, endDate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to filter accommodations: %v", err)
+	}
+
+	// select only accommodations with ids
+	var accommodationsFiltered []*model.Accommodation
+	for _, accommodation := range accommodations {
+		for _, accommodationId := range accommodationIds {
+			if accommodation.Id == accommodationId {
+				accommodationsFiltered = append(accommodationsFiltered, accommodation)
+			}
+		}
+	}
+
+	// calculate price
+	accommodationsFiltered, err = s.price_interval_manager.PriceAccommodationByPriceIntervals(ctx, accommodationsFiltered, startDate, endDate, int(*dto.NumGuests))
+
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to calculate price: %v", err)
+	}
+
+	// convert to proto
+	accommodationsProto := make([]*pb.Accommodation, len(accommodationsFiltered))
+	for i, accommodation := range accommodationsFiltered {
+		accommodationsProto[i] = accommodation.ToProto()
+	}
+
+	return &pb.AccommodationList{Accommodations: accommodationsProto}, nil
 
 }

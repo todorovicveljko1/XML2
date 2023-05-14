@@ -1,4 +1,4 @@
-import { AvailableInterval } from "@/types/accomodation";
+import { Accommodation, AvailableInterval } from "@/types/accomodation";
 import {
     Alert,
     Divider,
@@ -13,34 +13,39 @@ import {
     Typography,
 } from "@mui/material";
 import { AvailableIntervalForm } from "../Forms/AvailableIntervalsForm";
-import { AuthShow } from "@/providers/authProvider";
+import { AuthShow, useAuth } from "@/providers/authProvider";
 import dayjs from "dayjs";
 
 interface AvailableIntervalProps {
-    accommodationId: string;
+    accommodation: Accommodation;
     intervals: AvailableInterval[];
     onUpdate?: () => void;
 }
 
 export function AvailableInterval({
     intervals,
-    accommodationId,
+    accommodation,
     onUpdate,
 }: AvailableIntervalProps) {
+    const { user } = useAuth();
     return (
         <Paper sx={{ p: 3 }}>
             <AuthShow roles={["H"]}>
-                <AvailableIntervalForm
-                    accomodationId={accommodationId}
-                    onSuccess={onUpdate}
-                />
-                <Divider sx={{ my: 3 }} />
+                {user && user.id == accommodation.user_id && (
+                    <>
+                        <AvailableIntervalForm
+                            accomodationId={accommodation.id}
+                            onSuccess={onUpdate}
+                        />
+                        <Divider sx={{ my: 3 }} />
+                    </>
+                )}
             </AuthShow>
             <Typography variant="h6" gutterBottom>
                 Unavailable intervals
             </Typography>
-            <Typography variant="body2" color='text.secondary' gutterBottom>
-                This intervals are when host is not renting accommodation.
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+                Intervals when host is not rentting accommodation.
             </Typography>
             {intervals.length == 0 ? (
                 <Alert color="info">This accommodation is available!</Alert>

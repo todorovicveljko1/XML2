@@ -17,6 +17,8 @@ type Accommodation struct {
 	UserId          primitive.ObjectID `bson:"user_id" json:"user_id"`
 	IsPricePerNight bool               `bson:"is_price_per_night" json:"is_price_per_night"`
 	IsManual        bool               `bson:"is_manual" json:"is_manual"`
+
+	Price float64 `bson:"-" json:"price"`
 }
 
 // Convert to proto
@@ -33,5 +35,7 @@ func (a *Accommodation) ToProto() *pb.Accommodation {
 		UserId:          a.UserId.Hex(),
 		IsPricePerNight: a.IsPricePerNight,
 		IsManual:        a.IsManual,
+
+		Price: &a.Price,
 	}
 }

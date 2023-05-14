@@ -1,4 +1,4 @@
-import { AvailableInterval, PriceInterval } from "@/types/accomodation";
+import { Accommodation, AvailableInterval, PriceInterval } from "@/types/accomodation";
 import {
     Alert,
     Divider,
@@ -12,29 +12,34 @@ import {
     TableRow,
     Typography,
 } from "@mui/material";
-import { AuthShow } from "@/providers/authProvider";
+import { AuthShow, useAuth } from "@/providers/authProvider";
 import dayjs from "dayjs";
 import { PriceIntervalForm } from "../Forms/PriceIntervalForms";
 
 interface PriceIntervalProps {
-    accommodationId: string;
+    accommodation: Accommodation;
     intervals: PriceInterval[];
     onUpdate?: () => void;
 }
 
 export function PriceIntervalCard({
     intervals,
-    accommodationId,
+    accommodation,
     onUpdate,
 }: PriceIntervalProps) {
+    const { user } = useAuth();
     return (
         <Paper sx={{ p: 3 }}>
             <AuthShow roles={["H"]}>
+            {user && user.id == accommodation.user_id && (
+                    <>
                 <PriceIntervalForm
-                    accomodationId={accommodationId}
+                    accomodationId={accommodation.id}
                     onSuccess={onUpdate}
                 />
                 <Divider sx={{ my: 3 }} />
+                </>
+            )}
             </AuthShow>
             <Typography variant="h6" gutterBottom>
                 Modified prices intervals

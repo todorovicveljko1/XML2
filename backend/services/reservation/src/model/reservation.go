@@ -6,7 +6,7 @@ import (
 	"reservation.accommodation.com/pb"
 )
 
-// STATUS:: PENNDING, APPROVED, REJECTED, CANCELED, AUTO_REJECTED
+// STATUS:: PENDING, APPROVED, REJECTED, CANCELED, AUTO_REJECTED
 type Reservation struct {
 	Id              primitive.ObjectID `bson:"_id" json:"id"`
 	UserId          primitive.ObjectID `bson:"user_id" json:"user_id"`

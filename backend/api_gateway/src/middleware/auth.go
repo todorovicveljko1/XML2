@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -50,4 +51,43 @@ func Authorized(clients *client.Clients) gin.HandlerFunc {
 		// Call the next handler
 		c.Next()
 	}
+}
+
+// get user from header
+func GetUserFromHeader(c *gin.Context, clients *client.Clients) (*string, error) {
+	// Get the authorization header
+	authHeader := c.Request.Header.Get("Authorization")
+
+	// Check that the authorization header is not empty
+	if authHeader == "" {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "Authorization header is missing",
+		})
+		return nil, errors.New("Authorization header is missing")
+	}
+
+	// Check that the authorization header starts with "Bearer"
+	authHeaderParts := strings.Split(authHeader, " ")
+	if len(authHeaderParts) != 2 || authHeaderParts[0] != "Bearer" {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "Authorization header format must be Bearer <token>",
+		})
+		return nil, errors.New("Authorization header format must be Bearer <token>")
+	}
+
+	// Extract the token from the authorization header
+	tokenString := authHeaderParts[1]
+
+	// Parse the token
+	user, err := clients.AuthClient.AuthUser(c.Request.Context(), &pb.AuthUserRequest{Token: tokenString})
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid token",
+		})
+		return nil, errors.New("Invalid token")
+	}
+
+	return &user.Id, nil
+
 }

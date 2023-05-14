@@ -1,3 +1,4 @@
+import { AuthShow, useAuth } from "@/providers/authProvider";
 import { Accommodation } from "@/types/accomodation";
 import {
     Card,
@@ -17,10 +18,15 @@ interface AccommodationCardProps {
 }
 
 export function AccommodationCard({ accommodation }: AccommodationCardProps) {
+    const { user } = useAuth();
     const router = useRouter();
     return (
         <Card sx={{ minWidth: 275 }}>
-            <CardActionArea onClick={()=>router.push(`/accommodation/${accommodation.id}`)}>
+            <CardActionArea
+                onClick={() =>
+                    router.push(`/accommodation/${accommodation.id}`)
+                }
+            >
                 {accommodation.photo_url.length != 0 && (
                     <CardMedia
                         component={"img"}
@@ -36,18 +42,13 @@ export function AccommodationCard({ accommodation }: AccommodationCardProps) {
                             justifyContent={"space-between"}
                             alignItems={"center"}
                         >
-                            <Typography
-                                gutterBottom
-                                variant="h5"
-                                component="div"
-                            >
+                            <Typography variant="h5" component="div">
                                 {accommodation.name}
                             </Typography>
                             <Typography variant="h6" color="green">
-                                {accommodation.default_price}${" "}
-                                {accommodation.is_price_per_night
-                                    ? "/ night"
-                                    : "/ guest"}
+                                {accommodation.price
+                                    ? `${accommodation.price}$ total`
+                                    : `${accommodation.default_price}$${accommodation.is_price_per_night ? "/ night" : "/ guest"}`}
                             </Typography>
                         </Stack>
                         <Typography variant="body2" color="text.secondary">
@@ -57,15 +58,43 @@ export function AccommodationCard({ accommodation }: AccommodationCardProps) {
                             <Chip
                                 color="info"
                                 label={`GUESTS: ${accommodation.min_guests} - ${accommodation.max_guests}`}
-                                sx={{mt:1, mr:1}}
+                                sx={{ mt: 1, mr: 1 }}
                             />
                             {accommodation.amenity.map((amenity) => (
-                                <Chip key={amenity} label={amenity} sx={{mt:1, mr:1}}/>
+                                <Chip
+                                    key={amenity}
+                                    label={amenity}
+                                    sx={{ mt: 1, mr: 1 }}
+                                />
                             ))}
                         </Stack>
                     </Stack>
                 </CardContent>
             </CardActionArea>
+            <AuthShow roles={["G"]}>
+                <CardActions sx={{ px: 2, pb: 2, float: "right" }}>
+                    <Button variant="contained" size="small">
+                        Create Reserve
+                    </Button>
+                </CardActions>
+            </AuthShow>
+            <AuthShow roles={["H"]}>
+                {user && user.id == accommodation.user_id && (
+                    <CardActions sx={{ px: 2, pb: 2, float: "right" }}>
+                        <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() =>
+                                router.push(
+                                    `/accommodation/${accommodation.id}/reservation`
+                                )
+                            }
+                        >
+                            Reservations
+                        </Button>
+                    </CardActions>
+                )}
+            </AuthShow>
         </Card>
     );
 }
