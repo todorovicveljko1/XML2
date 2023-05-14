@@ -89,14 +89,16 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 	}
 
 	//Check if there are reservations in that interval
-	affectedIntervals, err := s.CheckReservationIntervals(ctx, reservation)
+	affectedReservations, err := s.CheckReservationIntervals(ctx, reservation)
 	if err != nil {
 		log.Println("Cannot get affected intervals")
 		return nil, err
 	}
 
-	if len(affectedIntervals) != 0 {
-		return nil, status.Error(codes.Internal, "Already exists reservation at the same time")
+	for _, i_reservation := range affectedReservations {
+		if i_reservation.Status == "APPROVED" {
+			return nil, status.Error(codes.Internal, "Already exists reservation at the same time")
+		}
 	}
 
 	// Insert reservation
@@ -252,6 +254,7 @@ func (a *Server) CheckReservationIntervals(ctx context.Context, reservation mode
 
 	affectedIntervals := []*model.Reservation{}
 	cursor, err := a.res_collection.Find(ctx, bson.M{
+		"accommodation_id": reservation.AccommodationId,
 		"$or": bson.A{
 			bson.M{"$and": []bson.M{
 				{"start_date": bson.M{"$gte": reservation.StartDate}},
