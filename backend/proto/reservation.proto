@@ -23,6 +23,7 @@ service ReservationService{
     rpc GetReservationsForAccommodation(IdRequest) returns (ReservationList);
 
     rpc FilterOutTakenAccommodations(FilterTakenAccommodationsRequest) returns (IdList);
+    rpc HasActiveReservationInInterval(IntervalRequest) returns (BoolResponse);
 }
 
 message GetReservationRequest{
@@ -59,4 +60,14 @@ message FilterTakenAccommodationsRequest{
     repeated string accommodation_ids = 1;
     string start_date = 2;
     string end_date = 3;
+}
+
+message IntervalRequest{
+    string accommodation_id = 2;
+    string start_date = 3;
+    string end_date = 4;
+}
+
+message BoolResponse{
+    bool value = 1;
 }

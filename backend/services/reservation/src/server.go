@@ -424,6 +424,69 @@ func (s *Server) FilterOutTakenAccommodations(parent context.Context, dto *pb.Fi
 
 }
 
+func (s *Server) HasActiveReservationInInterval(parent context.Context, dto *pb.IntervalRequest) (*pb.BoolResponse, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	// parse dates
+	StartDate, err := time.Parse(time.RFC3339, dto.StartDate)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse start date")
+	}
+	StartDate = StartDate.Truncate(24 * time.Hour)
+
+	EndDate, err := time.Parse(time.RFC3339, dto.EndDate)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse end date")
+	}
+	EndDate = EndDate.Truncate(24 * time.Hour)
+
+	// parse accommodation id
+	accommodationId, err := primitive.ObjectIDFromHex(dto.AccommodationId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid accommodation id")
+	}
+
+	cursor, err := s.res_collection.Find(ctx, bson.M{
+		"accommodation_id": accommodationId,
+		"status":           bson.M{"$in": bson.A{"APPROVED", "PENDING"}},
+		"$or": bson.A{
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$gte": StartDate}},
+				{"start_date": bson.M{"$lte": EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"end_date": bson.M{"$gte": StartDate}},
+				{"end_date": bson.M{"$lte": EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$lte": StartDate}},
+				{"end_date": bson.M{"$gte": EndDate}},
+			}},
+			bson.M{"$and": []bson.M{
+				{"start_date": bson.M{"$gte": StartDate}},
+				{"end_date": bson.M{"$lte": EndDate}},
+			}},
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	hasActiveReservation := false
+	for cursor.Next(ctx) {
+		hasActiveReservation = true
+		break
+	}
+
+	return &pb.BoolResponse{
+		Value: hasActiveReservation,
+	}, nil
+}
+
+// PRIVATE FUNCTIONS
 func (a *Server) checkReservationIntervals(ctx context.Context, reservation model.Reservation) ([]*model.Reservation, error) {
 
 	affectedIntervals := []*model.Reservation{}

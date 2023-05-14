@@ -27,6 +27,7 @@ const (
 	ReservationService_GetReservationsForGuest_FullMethodName         = "/ReservationService/GetReservationsForGuest"
 	ReservationService_GetReservationsForAccommodation_FullMethodName = "/ReservationService/GetReservationsForAccommodation"
 	ReservationService_FilterOutTakenAccommodations_FullMethodName    = "/ReservationService/FilterOutTakenAccommodations"
+	ReservationService_HasActiveReservationInInterval_FullMethodName  = "/ReservationService/HasActiveReservationInInterval"
 )
 
 // ReservationServiceClient is the client API for ReservationService service.
@@ -41,6 +42,7 @@ type ReservationServiceClient interface {
 	GetReservationsForGuest(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*ReservationList, error)
 	GetReservationsForAccommodation(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*ReservationList, error)
 	FilterOutTakenAccommodations(ctx context.Context, in *FilterTakenAccommodationsRequest, opts ...grpc.CallOption) (*IdList, error)
+	HasActiveReservationInInterval(ctx context.Context, in *IntervalRequest, opts ...grpc.CallOption) (*BoolResponse, error)
 }
 
 type reservationServiceClient struct {
@@ -123,6 +125,15 @@ func (c *reservationServiceClient) FilterOutTakenAccommodations(ctx context.Cont
 	return out, nil
 }
 
+func (c *reservationServiceClient) HasActiveReservationInInterval(ctx context.Context, in *IntervalRequest, opts ...grpc.CallOption) (*BoolResponse, error) {
+	out := new(BoolResponse)
+	err := c.cc.Invoke(ctx, ReservationService_HasActiveReservationInInterval_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReservationServiceServer is the server API for ReservationService service.
 // All implementations must embed UnimplementedReservationServiceServer
 // for forward compatibility
@@ -135,6 +146,7 @@ type ReservationServiceServer interface {
 	GetReservationsForGuest(context.Context, *IdRequest) (*ReservationList, error)
 	GetReservationsForAccommodation(context.Context, *IdRequest) (*ReservationList, error)
 	FilterOutTakenAccommodations(context.Context, *FilterTakenAccommodationsRequest) (*IdList, error)
+	HasActiveReservationInInterval(context.Context, *IntervalRequest) (*BoolResponse, error)
 	mustEmbedUnimplementedReservationServiceServer()
 }
 
@@ -165,6 +177,9 @@ func (UnimplementedReservationServiceServer) GetReservationsForAccommodation(con
 }
 func (UnimplementedReservationServiceServer) FilterOutTakenAccommodations(context.Context, *FilterTakenAccommodationsRequest) (*IdList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FilterOutTakenAccommodations not implemented")
+}
+func (UnimplementedReservationServiceServer) HasActiveReservationInInterval(context.Context, *IntervalRequest) (*BoolResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HasActiveReservationInInterval not implemented")
 }
 func (UnimplementedReservationServiceServer) mustEmbedUnimplementedReservationServiceServer() {}
 
@@ -323,6 +338,24 @@ func _ReservationService_FilterOutTakenAccommodations_Handler(srv interface{}, c
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReservationService_HasActiveReservationInInterval_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IntervalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReservationServiceServer).HasActiveReservationInInterval(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReservationService_HasActiveReservationInInterval_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReservationServiceServer).HasActiveReservationInInterval(ctx, req.(*IntervalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ReservationService_ServiceDesc is the grpc.ServiceDesc for ReservationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -361,6 +394,10 @@ var ReservationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FilterOutTakenAccommodations",
 			Handler:    _ReservationService_FilterOutTakenAccommodations_Handler,
+		},
+		{
+			MethodName: "HasActiveReservationInInterval",
+			Handler:    _ReservationService_HasActiveReservationInInterval_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

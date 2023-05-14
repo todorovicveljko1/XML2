@@ -18,16 +18,25 @@ func AddAvailableIntervalHandler(ctx *gin.Context, clients *client.Clients) {
 		return
 	}
 	addAvailableIntervalRequest.Id = ctx.Param("id")
-	/*
-		TODO: Check if user is owner of accommodation
-		userId, exists := ctx.Get("user")
-		if !exists {
-			ctx.AbortWithStatusJSON(401, gin.H{
-				"error": "You are not authorized to perform this action",
-			})
-			return
-		}
-	*/
+
+	// check for active reservation in this interval
+	res, err := clients.ReservationClient.HasActiveReservationInInterval(ctx, &pb.IntervalRequest{
+		AccommodationId: addAvailableIntervalRequest.Id,
+		StartDate:       addAvailableIntervalRequest.Availability.StartDate,
+		EndDate:         addAvailableIntervalRequest.Availability.EndDate,
+	})
+
+	if err != nil {
+		helper.PrettyGRPCError(ctx, err)
+		return
+	}
+
+	if res.Value {
+		ctx.AbortWithStatusJSON(400, gin.H{
+			"error": "There is an active reservation in this interval",
+		})
+		return
+	}
 
 	_, err = clients.AccommodationClient.AddAccommodationAvailability(ctx, &addAvailableIntervalRequest)
 	if err != nil {

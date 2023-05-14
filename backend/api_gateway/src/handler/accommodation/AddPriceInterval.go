@@ -21,6 +21,25 @@ func AddPriceIntervalHandler(ctx *gin.Context, clients *client.Clients) {
 
 	addPriceIntervalRequest.Id = ctx.Param("id")
 
+	// check for active reservation in this interval
+	res, err := clients.ReservationClient.HasActiveReservationInInterval(ctx, &pb.IntervalRequest{
+		AccommodationId: addPriceIntervalRequest.Id,
+		StartDate:       addPriceIntervalRequest.Price.StartDate,
+		EndDate:         addPriceIntervalRequest.Price.EndDate,
+	})
+
+	if err != nil {
+		helper.PrettyGRPCError(ctx, err)
+		return
+	}
+
+	if res.Value {
+		ctx.AbortWithStatusJSON(400, gin.H{
+			"error": "There is an active reservation in this interval",
+		})
+		return
+	}
+
 	_, err = clients.AccommodationClient.AddAccommodationPrice(ctx, &addPriceIntervalRequest)
 
 	if err != nil {
