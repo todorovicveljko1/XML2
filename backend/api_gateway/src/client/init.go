@@ -1,7 +1,9 @@
 package client
 
 import (
+	"context"
 	"log"
+	"time"
 
 	"api.accommodation.com/config"
 	"api.accommodation.com/pb"
@@ -30,24 +32,29 @@ type Clients struct {
 }
 
 func InitClients(cfg *config.Config) *Clients {
-	authConn, err := grpc.Dial(cfg.AuthAddress, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	log.Println("Connecting to servises...")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	authConn, err := grpc.DialContext(ctx, cfg.AuthAddress, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Can't connect to auth servise")
 		panic(err)
 	}
 
-	accConn, err := grpc.Dial(cfg.AccAddress, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	accConn, err := grpc.DialContext(ctx, cfg.AccAddress, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Can't connect to accommodation servise")
 		panic(err)
 	}
 
-	resConn, err := grpc.Dial(cfg.ResAddress, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	resConn, err := grpc.DialContext(ctx, cfg.ResAddress, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Can't connect to reservation servise")
 		panic(err)
 	}
 
+	log.Println("Connected to servises")
 	return &Clients{
 		connections: &Connections{
 			authConn: authConn,

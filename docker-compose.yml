@@ -1,0 +1,71 @@
+version: '3'
+services:
+  ui:
+    build:
+      context: frontend
+      target: runner
+    ports:
+      - "3000:3000"
+    environment:
+      API_URL: "http://api:8000/api/v1"
+    depends_on:
+      - api
+
+  db:
+    image: mongo
+    ports:
+      - "27017:27017"
+  
+  # services
+
+  auth:
+    build:
+      context: ./backend/services/auth
+      target: production
+    environment:
+      AUTH_ADDRESS : ":8000"
+      MONGODB_URI : "mongodb://db:27017/"
+      SECRET: "secret"
+    depends_on:
+      - db
+
+  accommodation:
+    build:
+      context: ./backend/services/accommodation
+      target: production
+    environment:
+      ACCOMMODATION_ADDRESS: ":8000"
+      MONGODB_URI: "mongodb://db:27017/"
+    depends_on:
+      - db
+  
+  reservation:
+    build:
+      context: ./backend/services/reservation
+      target: production
+    environment:
+      RESERVATION_ADDRESS: ":8000"
+      MONGODB_URI: "mongodb://db:27017/"
+    depends_on:
+      - db
+  
+
+  api:
+    build:
+      context: ./backend/api_gateway
+      target: production
+    ports:
+      - "8000:8000"
+    environment:
+      API_ADDRESS: ":8000"
+      AUTH_ADDRESS : "auth:8000"
+      ACCOMMODATION_ADDRESS: "accommodation:8000"
+      RESERVATION_ADDRESS: "reservation:8000"
+      RATING_ADDRESS: "rating:8000"
+
+    depends_on:
+      - auth
+      - accommodation
+      - reservation
+
+  

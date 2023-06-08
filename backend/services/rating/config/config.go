@@ -17,7 +17,7 @@ func getOsValueOrDefault(key string, defaultValue string) string {
 
 func GetConfig() Config {
 	return Config{
-		Address:    getOsValueOrDefault("AUTH_ADDRESS", "localhost:8004"),
+		Address:    getOsValueOrDefault("RATING_ADDRESS", "localhost:8004"),
 		MongoDBURI: getOsValueOrDefault("MONGODB_URI", "mongodb://localhost:27017/"),
 	}
 }

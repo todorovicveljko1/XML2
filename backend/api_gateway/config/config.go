@@ -21,7 +21,7 @@ func GetConfig() Config {
 	return Config{
 		Address:     getOsValueOrDefault("API_ADDRESS", "localhost:8000"),
 		AuthAddress: getOsValueOrDefault("AUTH_ADDRESS", "localhost:8001"),
-		AccAddress:  getOsValueOrDefault("ACC_ADDRESS", "localhost:8002"),
-		ResAddress:  getOsValueOrDefault("RES_ADDRESS", "localhost:8003"),
+		AccAddress:  getOsValueOrDefault("ACCOMMODATION_ADDRESS", "localhost:8002"),
+		ResAddress:  getOsValueOrDefault("RESERVATION_ADDRESS", "localhost:8003"),
 	}
 }
