@@ -1,0 +1,67 @@
+syntax = "proto3";
+option go_package = "./pb";
+
+service RatingService {
+    // Host rating
+    rpc HostRating (IdRequest) returns (RatingResponse) {} // host_id
+    rpc RateHost (RateRequest) returns (RateResponse) {} // id -> host_id
+    rpc RemoveHostRating (RemoveRatingRequest) returns (RemoveRatingResponse) {} // id -> host_id
+
+    rpc GetMyHostRating (IdRequest) returns (HostRatingList) {} // user_id
+
+    // Accommodation rating
+    rpc AccommodationRating (IdRequest) returns (RatingResponse) {}  // accommodation_id
+    rpc RateAccommodation (RateRequest) returns (RateResponse) {} // id -> accommodation_id
+    rpc RemoveAccommodationRating (RemoveRatingRequest) returns (RemoveRatingResponse) {} // id -> accommodation_id
+
+    rpc GetMyAccommodationRating (IdRequest) returns (AccommodationRatingList) {} // user_id
+}
+
+message HostRating{
+    string id = 1;
+    string host_id = 2;
+    string user_id = 3;
+    int32 rating = 4;
+}
+
+message HostRatingList{
+    repeated HostRating ratings = 1;
+}
+
+message AccommodationRating{
+    string id = 1;
+    string accommodation_id = 2;
+    string user_id = 3;
+    int32 rating = 4;
+}
+
+message AccommodationRatingList{
+    repeated AccommodationRating ratings = 1;
+}
+
+message IdRequest {
+    string id = 1; // host_id or accommodation_id or user_id
+}
+
+message RatingResponse {
+    double rating = 1;
+}
+
+message RateRequest {
+    string id = 1; // host_id or accommodation_id
+    string user_id = 2;
+    int32 rating = 3;
+}
+
+message RateResponse {
+    bool updated = 1;
+}
+
+message RemoveRatingRequest {
+    string id = 1; // host_id or accommodation_id
+    string user_id = 2;
+}
+
+message RemoveRatingResponse {
+    bool removed = 1;
+}

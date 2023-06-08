@@ -306,6 +306,11 @@ func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequ
 		}
 		return &pb.AccommodationList{Accommodations: accommodationsProto}, nil
 	}
+
+	if len(accommodations) == 0 {
+		return &pb.AccommodationList{Accommodations: []*pb.Accommodation{}}, nil
+	}
+
 	// filter accommodations by available intervals
 	var accommodationIds []primitive.ObjectID
 	for _, accommodation := range accommodations {
@@ -338,7 +343,6 @@ func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequ
 	for i, accommodation := range accommodationsFiltered {
 		accommodationsProto[i] = accommodation.ToProto()
 	}
-
 	return &pb.AccommodationList{Accommodations: accommodationsProto}, nil
 
 }

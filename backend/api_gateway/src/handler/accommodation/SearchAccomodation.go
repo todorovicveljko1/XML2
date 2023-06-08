@@ -61,6 +61,11 @@ func SearchAccommodationsHandler(ctx *gin.Context, clients *client.Clients) {
 		return
 	}
 
+	if len(acc.Accommodations) == 0 {
+		ctx.JSON(200, acc)
+		return
+	}
+
 	if !searchAccommodationsRequest.ShowMy {
 		var accIds []string
 		for _, a := range acc.Accommodations {
