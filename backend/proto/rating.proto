@@ -3,18 +3,18 @@ option go_package = "./pb";
 
 service RatingService {
     // Host rating
-    rpc HostRating (IdRequest) returns (RatingResponse) {} // host_id
+    rpc HostRating (RatingIdRequest) returns (RatingResponse) {} // host_id
     rpc RateHost (RateRequest) returns (RateResponse) {} // id -> host_id
     rpc RemoveHostRating (RemoveRatingRequest) returns (RemoveRatingResponse) {} // id -> host_id
 
-    rpc GetMyHostRating (IdRequest) returns (HostRatingList) {} // user_id
+    rpc GetMyHostRating (RatingIdRequest) returns (HostRatingList) {} // user_id
 
     // Accommodation rating
-    rpc AccommodationRating (IdRequest) returns (RatingResponse) {}  // accommodation_id
+    rpc AccommodationRating (RatingIdRequest) returns (RatingResponse) {}  // accommodation_id
     rpc RateAccommodation (RateRequest) returns (RateResponse) {} // id -> accommodation_id
     rpc RemoveAccommodationRating (RemoveRatingRequest) returns (RemoveRatingResponse) {} // id -> accommodation_id
 
-    rpc GetMyAccommodationRating (IdRequest) returns (AccommodationRatingList) {} // user_id
+    rpc GetMyAccommodationRating (RatingIdRequest) returns (AccommodationRatingList) {} // user_id
 }
 
 message HostRating{
@@ -39,7 +39,7 @@ message AccommodationRatingList{
     repeated AccommodationRating ratings = 1;
 }
 
-message IdRequest {
+message RatingIdRequest {
     string id = 1; // host_id or accommodation_id or user_id
 }
 

@@ -34,15 +34,15 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RatingServiceClient interface {
 	// Host rating
-	HostRating(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*RatingResponse, error)
+	HostRating(ctx context.Context, in *RatingIdRequest, opts ...grpc.CallOption) (*RatingResponse, error)
 	RateHost(ctx context.Context, in *RateRequest, opts ...grpc.CallOption) (*RateResponse, error)
 	RemoveHostRating(ctx context.Context, in *RemoveRatingRequest, opts ...grpc.CallOption) (*RemoveRatingResponse, error)
-	GetMyHostRating(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*HostRatingList, error)
+	GetMyHostRating(ctx context.Context, in *RatingIdRequest, opts ...grpc.CallOption) (*HostRatingList, error)
 	// Accommodation rating
-	AccommodationRating(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*RatingResponse, error)
+	AccommodationRating(ctx context.Context, in *RatingIdRequest, opts ...grpc.CallOption) (*RatingResponse, error)
 	RateAccommodation(ctx context.Context, in *RateRequest, opts ...grpc.CallOption) (*RateResponse, error)
 	RemoveAccommodationRating(ctx context.Context, in *RemoveRatingRequest, opts ...grpc.CallOption) (*RemoveRatingResponse, error)
-	GetMyAccommodationRating(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*AccommodationRatingList, error)
+	GetMyAccommodationRating(ctx context.Context, in *RatingIdRequest, opts ...grpc.CallOption) (*AccommodationRatingList, error)
 }
 
 type ratingServiceClient struct {
@@ -53,7 +53,7 @@ func NewRatingServiceClient(cc grpc.ClientConnInterface) RatingServiceClient {
 	return &ratingServiceClient{cc}
 }
 
-func (c *ratingServiceClient) HostRating(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*RatingResponse, error) {
+func (c *ratingServiceClient) HostRating(ctx context.Context, in *RatingIdRequest, opts ...grpc.CallOption) (*RatingResponse, error) {
 	out := new(RatingResponse)
 	err := c.cc.Invoke(ctx, RatingService_HostRating_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -80,7 +80,7 @@ func (c *ratingServiceClient) RemoveHostRating(ctx context.Context, in *RemoveRa
 	return out, nil
 }
 
-func (c *ratingServiceClient) GetMyHostRating(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*HostRatingList, error) {
+func (c *ratingServiceClient) GetMyHostRating(ctx context.Context, in *RatingIdRequest, opts ...grpc.CallOption) (*HostRatingList, error) {
 	out := new(HostRatingList)
 	err := c.cc.Invoke(ctx, RatingService_GetMyHostRating_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -89,7 +89,7 @@ func (c *ratingServiceClient) GetMyHostRating(ctx context.Context, in *IdRequest
 	return out, nil
 }
 
-func (c *ratingServiceClient) AccommodationRating(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*RatingResponse, error) {
+func (c *ratingServiceClient) AccommodationRating(ctx context.Context, in *RatingIdRequest, opts ...grpc.CallOption) (*RatingResponse, error) {
 	out := new(RatingResponse)
 	err := c.cc.Invoke(ctx, RatingService_AccommodationRating_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -116,7 +116,7 @@ func (c *ratingServiceClient) RemoveAccommodationRating(ctx context.Context, in 
 	return out, nil
 }
 
-func (c *ratingServiceClient) GetMyAccommodationRating(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*AccommodationRatingList, error) {
+func (c *ratingServiceClient) GetMyAccommodationRating(ctx context.Context, in *RatingIdRequest, opts ...grpc.CallOption) (*AccommodationRatingList, error) {
 	out := new(AccommodationRatingList)
 	err := c.cc.Invoke(ctx, RatingService_GetMyAccommodationRating_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -130,15 +130,15 @@ func (c *ratingServiceClient) GetMyAccommodationRating(ctx context.Context, in *
 // for forward compatibility
 type RatingServiceServer interface {
 	// Host rating
-	HostRating(context.Context, *IdRequest) (*RatingResponse, error)
+	HostRating(context.Context, *RatingIdRequest) (*RatingResponse, error)
 	RateHost(context.Context, *RateRequest) (*RateResponse, error)
 	RemoveHostRating(context.Context, *RemoveRatingRequest) (*RemoveRatingResponse, error)
-	GetMyHostRating(context.Context, *IdRequest) (*HostRatingList, error)
+	GetMyHostRating(context.Context, *RatingIdRequest) (*HostRatingList, error)
 	// Accommodation rating
-	AccommodationRating(context.Context, *IdRequest) (*RatingResponse, error)
+	AccommodationRating(context.Context, *RatingIdRequest) (*RatingResponse, error)
 	RateAccommodation(context.Context, *RateRequest) (*RateResponse, error)
 	RemoveAccommodationRating(context.Context, *RemoveRatingRequest) (*RemoveRatingResponse, error)
-	GetMyAccommodationRating(context.Context, *IdRequest) (*AccommodationRatingList, error)
+	GetMyAccommodationRating(context.Context, *RatingIdRequest) (*AccommodationRatingList, error)
 	mustEmbedUnimplementedRatingServiceServer()
 }
 
@@ -146,7 +146,7 @@ type RatingServiceServer interface {
 type UnimplementedRatingServiceServer struct {
 }
 
-func (UnimplementedRatingServiceServer) HostRating(context.Context, *IdRequest) (*RatingResponse, error) {
+func (UnimplementedRatingServiceServer) HostRating(context.Context, *RatingIdRequest) (*RatingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HostRating not implemented")
 }
 func (UnimplementedRatingServiceServer) RateHost(context.Context, *RateRequest) (*RateResponse, error) {
@@ -155,10 +155,10 @@ func (UnimplementedRatingServiceServer) RateHost(context.Context, *RateRequest) 
 func (UnimplementedRatingServiceServer) RemoveHostRating(context.Context, *RemoveRatingRequest) (*RemoveRatingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveHostRating not implemented")
 }
-func (UnimplementedRatingServiceServer) GetMyHostRating(context.Context, *IdRequest) (*HostRatingList, error) {
+func (UnimplementedRatingServiceServer) GetMyHostRating(context.Context, *RatingIdRequest) (*HostRatingList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMyHostRating not implemented")
 }
-func (UnimplementedRatingServiceServer) AccommodationRating(context.Context, *IdRequest) (*RatingResponse, error) {
+func (UnimplementedRatingServiceServer) AccommodationRating(context.Context, *RatingIdRequest) (*RatingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AccommodationRating not implemented")
 }
 func (UnimplementedRatingServiceServer) RateAccommodation(context.Context, *RateRequest) (*RateResponse, error) {
@@ -167,7 +167,7 @@ func (UnimplementedRatingServiceServer) RateAccommodation(context.Context, *Rate
 func (UnimplementedRatingServiceServer) RemoveAccommodationRating(context.Context, *RemoveRatingRequest) (*RemoveRatingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveAccommodationRating not implemented")
 }
-func (UnimplementedRatingServiceServer) GetMyAccommodationRating(context.Context, *IdRequest) (*AccommodationRatingList, error) {
+func (UnimplementedRatingServiceServer) GetMyAccommodationRating(context.Context, *RatingIdRequest) (*AccommodationRatingList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMyAccommodationRating not implemented")
 }
 func (UnimplementedRatingServiceServer) mustEmbedUnimplementedRatingServiceServer() {}
@@ -184,7 +184,7 @@ func RegisterRatingServiceServer(s grpc.ServiceRegistrar, srv RatingServiceServe
 }
 
 func _RatingService_HostRating_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IdRequest)
+	in := new(RatingIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func _RatingService_HostRating_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: RatingService_HostRating_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RatingServiceServer).HostRating(ctx, req.(*IdRequest))
+		return srv.(RatingServiceServer).HostRating(ctx, req.(*RatingIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -238,7 +238,7 @@ func _RatingService_RemoveHostRating_Handler(srv interface{}, ctx context.Contex
 }
 
 func _RatingService_GetMyHostRating_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IdRequest)
+	in := new(RatingIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -250,13 +250,13 @@ func _RatingService_GetMyHostRating_Handler(srv interface{}, ctx context.Context
 		FullMethod: RatingService_GetMyHostRating_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RatingServiceServer).GetMyHostRating(ctx, req.(*IdRequest))
+		return srv.(RatingServiceServer).GetMyHostRating(ctx, req.(*RatingIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _RatingService_AccommodationRating_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IdRequest)
+	in := new(RatingIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func _RatingService_AccommodationRating_Handler(srv interface{}, ctx context.Con
 		FullMethod: RatingService_AccommodationRating_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RatingServiceServer).AccommodationRating(ctx, req.(*IdRequest))
+		return srv.(RatingServiceServer).AccommodationRating(ctx, req.(*RatingIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -310,7 +310,7 @@ func _RatingService_RemoveAccommodationRating_Handler(srv interface{}, ctx conte
 }
 
 func _RatingService_GetMyAccommodationRating_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IdRequest)
+	in := new(RatingIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ func _RatingService_GetMyAccommodationRating_Handler(srv interface{}, ctx contex
 		FullMethod: RatingService_GetMyAccommodationRating_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RatingServiceServer).GetMyAccommodationRating(ctx, req.(*IdRequest))
+		return srv.(RatingServiceServer).GetMyAccommodationRating(ctx, req.(*RatingIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
