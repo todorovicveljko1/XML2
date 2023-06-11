@@ -17,6 +17,7 @@ type Reservation struct {
 	Status          string             `bson:"status" json:"status"`
 	Price           float64            `bson:"price" json:"price"`
 	NumberOfGuests  int32              `bson:"number_of_guests" json:"number_of_guests"`
+	DeletedAt       *time.Time         `bson:"deleted_at,omitempty" json:"deleted_at,omitempty"`
 }
 
 // ConvertToPbReservation converts Reservation to pb.Reservation

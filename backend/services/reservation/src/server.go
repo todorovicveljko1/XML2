@@ -14,6 +14,7 @@ import (
 	"reservation.accommodation.com/pb"
 	"reservation.accommodation.com/src/db"
 	"reservation.accommodation.com/src/model"
+	"reservation.accommodation.com/src/saga"
 )
 
 type Server struct {
@@ -24,6 +25,8 @@ type Server struct {
 	res_collection *mongo.Collection
 
 	dbClient *mongo.Client
+
+	SAGA *saga.SAGA
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
@@ -31,7 +34,13 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	res_collection := client.Database("accommodation_res").Collection("reservation")
 
-	return &Server{cfg: cfg, dbClient: client, res_collection: res_collection}, nil
+	SAGA, err := saga.CreateSAGA(cfg, res_collection)
+	if err != nil {
+		log.Println("SAGA ReservationService: Error while creating SAGA")
+		return nil, err
+	}
+
+	return &Server{cfg: cfg, dbClient: client, res_collection: res_collection, SAGA: SAGA}, nil
 }
 
 func (s *Server) Stop() {
@@ -59,6 +68,10 @@ func (s *Server) GetReservation(parent context.Context, dto *pb.GetReservationRe
 		return nil, status.Error(codes.Internal, "Error while fetching reservation")
 	}
 
+	// Check if reservation is deleted
+	if reservation.DeletedAt != nil {
+		return nil, status.Error(codes.NotFound, "Reservation not found")
+	}
 	return reservation.ConvertToPbReservation(), nil
 }
 
@@ -300,6 +313,10 @@ func (s *Server) GetReservationsForGuest(parent context.Context, dto *pb.IdReque
 		if err = cursor.Decode(reservation); err != nil {
 			return nil, status.Error(codes.Internal, "Error while decoding reservations")
 		}
+		// skip deleted reservations
+		if reservation.DeletedAt != nil {
+			continue
+		}
 		reservations = append(reservations, reservation.ConvertToPbReservation())
 	}
 
@@ -327,6 +344,10 @@ func (s *Server) GetReservationsForAccommodation(parent context.Context, dto *pb
 		reservation := &model.Reservation{}
 		if err = cursor.Decode(reservation); err != nil {
 			return nil, status.Error(codes.Internal, "Error while decoding reservations")
+		}
+		// skip deleted reservations
+		if reservation.DeletedAt != nil {
+			continue
 		}
 		reservations = append(reservations, reservation.ConvertToPbReservation())
 	}
@@ -368,6 +389,7 @@ func (s *Server) FilterOutTakenAccommodations(parent context.Context, dto *pb.Fi
 	cursor, err := s.res_collection.Find(ctx, bson.M{
 		"accommodation_id": bson.M{"$in": accommodationIds},
 		"status":           "APPROVED",
+		"deleted_at":       nil,
 		"$or": bson.A{
 			bson.M{"$and": []bson.M{
 				{"start_date": bson.M{"$gte": StartDate}},
@@ -564,6 +586,7 @@ func (a *Server) checkReservationIntervals(ctx context.Context, reservation mode
 	cursor, err := a.res_collection.Find(ctx, bson.M{
 		"accommodation_id": reservation.AccommodationId,
 		"status":           "APPROVED",
+		"deleted_at":       nil,
 		"$or": bson.A{
 			bson.M{"$and": []bson.M{
 				{"start_date": bson.M{"$gte": reservation.StartDate}},

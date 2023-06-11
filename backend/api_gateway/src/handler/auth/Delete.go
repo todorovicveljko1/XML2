@@ -62,21 +62,23 @@ func DeleteUserHandler(ctx *gin.Context, clients *client.Clients) {
 			})
 			return
 		}
-		// If not delete all accommodations
-		for _, acc := range res.Accommodations {
-			_, err := clients.AccommodationClient.DeleteAccommodation(ctx, &pb.GetAccommodationRequestWithUser{Id: acc.Id, UserId: userId.(string)})
-			if err != nil {
-				helper.PrettyGRPCError(ctx, err)
-				return
-			}
-		}
+		// // If not delete all accommodations
+		// for _, acc := range res.Accommodations {
+		// 	_, err := clients.AccommodationClient.DeleteAccommodation(ctx, &pb.GetAccommodationRequestWithUser{Id: acc.Id, UserId: userId.(string)})
+		// 	if err != nil {
+		// 		helper.PrettyGRPCError(ctx, err)
+		// 		return
+		// 	}
+		// }
 	}
 	// TODO: Check if user does not have any reservations before deleting
-	_, err := clients.AuthClient.DeleteUser(ctx.Request.Context(), &pb.GetUserRequest{Id: userId.(string)})
-	if err != nil {
-		helper.PrettyGRPCError(ctx, err)
-		return
-	}
+	// _, err := clients.AuthClient.DeleteUser(ctx.Request.Context(), &pb.GetUserRequest{Id: userId.(string)})
+	// if err != nil {
+	// 	helper.PrettyGRPCError(ctx, err)
+	// 	return
+	// }
+	// Publish to NATS
+	clients.Connections.NC.Publish("user_delete", []byte(userId.(string)))
 
 	ctx.JSON(200, gin.H{
 		"message": "User deleted",

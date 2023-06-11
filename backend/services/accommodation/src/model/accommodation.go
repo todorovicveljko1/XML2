@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"acc.accommodation.com/pb"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -17,6 +19,7 @@ type Accommodation struct {
 	UserId          primitive.ObjectID `bson:"user_id" json:"user_id"`
 	IsPricePerNight bool               `bson:"is_price_per_night" json:"is_price_per_night"`
 	IsManual        bool               `bson:"is_manual" json:"is_manual"`
+	DeletedAt       *time.Time         `bson:"deleted_at,omitempty" json:"deleted_at,omitempty"`
 
 	Price float64 `bson:"-" json:"price"`
 }

@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"auth.accommodation.com/pb"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -21,6 +23,7 @@ type User struct {
 	Password      string             `bson:"password" json:"-"`
 	PlaceOfLiving string             `bson:"place_of_living" json:"place_of_living"`
 	Role          Role               `bson:"role" json:"role"`
+	DeletedAt     *time.Time         `bson:"deleted_at,omitempty" json:"deleted_at,omitempty"`
 }
 
 // ConvertToPbUser converts User to pb.User]

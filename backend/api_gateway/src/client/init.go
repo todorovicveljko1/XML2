@@ -7,6 +7,7 @@ import (
 
 	"api.accommodation.com/config"
 	"api.accommodation.com/pb"
+	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -15,16 +16,19 @@ type Connections struct {
 	authConn *grpc.ClientConn
 	accConn  *grpc.ClientConn
 	resConn  *grpc.ClientConn
+
+	NC *nats.Conn
 }
 
 func (c *Connections) Close() {
 	c.authConn.Close()
 	c.accConn.Close()
 	c.resConn.Close()
+	c.NC.Close()
 }
 
 type Clients struct {
-	connections *Connections
+	Connections *Connections
 
 	AuthClient          pb.AuthClient
 	AccommodationClient pb.AccommodationServiceClient
@@ -54,12 +58,19 @@ func InitClients(cfg *config.Config) *Clients {
 		panic(err)
 	}
 
+	nc, err := nats.Connect(cfg.NatsAddress)
+	if err != nil {
+		log.Println("Can't connect to NATS server")
+		panic(err)
+	}
+
 	log.Println("Connected to servises")
 	return &Clients{
-		connections: &Connections{
+		Connections: &Connections{
 			authConn: authConn,
 			accConn:  accConn,
 			resConn:  resConn,
+			NC:       nc,
 		},
 		AuthClient:          AuthGRPCClient(authConn),
 		AccommodationClient: AccommodationGRPCClient(accConn),
@@ -68,5 +79,5 @@ func InitClients(cfg *config.Config) *Clients {
 }
 
 func (c *Clients) Close() {
-	c.connections.Close()
+	c.Connections.Close()
 }

@@ -10,6 +10,7 @@ import (
 	"acc.accommodation.com/src/db"
 	"acc.accommodation.com/src/manager"
 	"acc.accommodation.com/src/model"
+	"acc.accommodation.com/src/saga"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,6 +30,8 @@ type Server struct {
 	price_interval_manager     *manager.PriceIntervalManager
 
 	dbClient *mongo.Client
+
+	SAGA *saga.SAGA
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
@@ -41,6 +44,11 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	available_interval_manager := manager.NewAvailableIntervalManager(available_collection, client)
 	price_interval_manager := manager.NewPriceIntervalManager(prices_collection, client)
 
+	SAGA, err := saga.CreateSAGA(cfg, acc_collection)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Server{
 		cfg:                  cfg,
 		dbClient:             client,
@@ -50,6 +58,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 		available_interval_manager: available_interval_manager,
 		price_interval_manager:     price_interval_manager,
+
+		SAGA: SAGA,
 	}, nil
 }
 
@@ -74,7 +84,10 @@ func (s *Server) GetAccommodation(parent context.Context, dto *pb.GetAccommodati
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "failed to find accommodation: %v", err)
 	}
-
+	// Check if the accommodation is deleted
+	if acc.DeletedAt != nil {
+		return nil, status.Errorf(codes.NotFound, "failed to find accommodation: %v", err)
+	}
 	// Find the available intervals
 	availableIntervals, err := s.available_interval_manager.GetAvailableIntervalsByAccommodationId(ctx, accId)
 	if err != nil {
@@ -263,7 +276,9 @@ func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequ
 	}
 	endDate = endDate.Truncate(24 * time.Hour)
 	// create bson filter
-	filter := bson.M{}
+	filter := bson.M{
+		"deleted_at": bson.M{"$exists": false},
+	}
 
 	if dto.Location != nil && *dto.Location != "" {
 		// regex contains

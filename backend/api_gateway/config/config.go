@@ -7,6 +7,7 @@ type Config struct {
 	AuthAddress string
 	AccAddress  string
 	ResAddress  string
+	NatsAddress string
 }
 
 func getOsValueOrDefault(key string, defaultValue string) string {
@@ -23,5 +24,6 @@ func GetConfig() Config {
 		AuthAddress: getOsValueOrDefault("AUTH_ADDRESS", "localhost:8001"),
 		AccAddress:  getOsValueOrDefault("ACCOMMODATION_ADDRESS", "localhost:8002"),
 		ResAddress:  getOsValueOrDefault("RESERVATION_ADDRESS", "localhost:8003"),
+		NatsAddress: getOsValueOrDefault("NATS_ADDRESS", "localhost:4222"),
 	}
 }

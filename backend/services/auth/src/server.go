@@ -10,6 +10,7 @@ import (
 	"auth.accommodation.com/src/db"
 	"auth.accommodation.com/src/helper"
 	"auth.accommodation.com/src/model"
+	"auth.accommodation.com/src/saga"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -26,6 +27,8 @@ type Server struct {
 	user_collection *mongo.Collection
 
 	dbClient *mongo.Client
+
+	SAGA *saga.SAGA
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
@@ -33,10 +36,16 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	user_collection := client.Database("accommodation_auth").Collection("users")
 
-	return &Server{cfg: cfg, dbClient: client, user_collection: user_collection}, nil
+	saga, err := saga.CreateSAGA(*cfg, user_collection)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Server{cfg: cfg, dbClient: client, user_collection: user_collection, SAGA: saga}, nil
 }
 
 func (s *Server) Stop() {
+	s.SAGA.Close()
 	if err := s.dbClient.Disconnect(context.Background()); err != nil {
 		panic(err)
 	}
@@ -55,6 +64,10 @@ func (s *Server) Login(parent context.Context, dto *pb.LoginRequest) (*pb.LoginR
 			return nil, status.Error(codes.Unauthenticated, "Bad Credentials")
 		}
 		return nil, status.Error(codes.Internal, "Error while fetching user")
+	}
+	// Check if user is deleted
+	if user.DeletedAt != nil {
+		return nil, status.Error(codes.Unauthenticated, "Bad Credentials")
 	}
 	//Check if passwords are same
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.Password))
@@ -124,6 +137,10 @@ func (s *Server) AuthUser(parent context.Context, dto *pb.AuthUserRequest) (*pb.
 			return nil, status.Error(codes.NotFound, "User not found")
 		}
 		return nil, status.Error(codes.Internal, "Error while fetching user")
+	}
+	// Check if user is deleted
+	if user.DeletedAt != nil {
+		return nil, status.Error(codes.Unauthenticated, "User is deleted")
 	}
 
 	return user.ConvertToPbUser(), nil
