@@ -39,24 +39,15 @@ func (s *Server) Stop() {
 func (s *Server) HostRating(context.Context, *pb.RatingIdRequest) (*pb.RatingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HostRating not implemented")
 }
-func (s *Server) RateHost(context.Context, *pb.RateRequest) (*pb.RateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RateHost not implemented")
-}
-func (s *Server) RemoveHostRating(context.Context, *pb.RemoveRatingRequest) (*pb.RemoveRatingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveHostRating not implemented")
-}
-func (s *Server) GetMyHostRating(context.Context, *pb.RatingIdRequest) (*pb.HostRatingList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMyHostRating not implemented")
-}
 func (s *Server) AccommodationRating(context.Context, *pb.RatingIdRequest) (*pb.RatingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AccommodationRating not implemented")
 }
-func (s *Server) RateAccommodation(context.Context, *pb.RateRequest) (*pb.RateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RateAccommodation not implemented")
+func (s *Server) Rate(context.Context, *pb.RateRequest) (*pb.RateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Rate not implemented")
 }
-func (s *Server) RemoveAccommodationRating(context.Context, *pb.RemoveRatingRequest) (*pb.RemoveRatingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveAccommodationRating not implemented")
+func (s *Server) RemoveRating(context.Context, *pb.RemoveRatingRequest) (*pb.RemoveRatingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveRating not implemented")
 }
-func (s *Server) GetMyAccommodationRating(context.Context, *pb.RatingIdRequest) (*pb.AccommodationRatingList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMyAccommodationRating not implemented")
+func (s *Server) GetMyRatings(context.Context, *pb.RatingIdRequest) (*pb.RatingList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMyRatings not implemented")
 }

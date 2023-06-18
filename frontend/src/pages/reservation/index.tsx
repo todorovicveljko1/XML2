@@ -48,18 +48,49 @@ function ShowRatingCondition(reservation: any) {
     );
 }
 
-function UseReservationsDate(){
-    const { data: reservationDate, isLoading: isLoadingRes, error: resError, refetch: refetchReservation } = useQuery(
-        ["reservations"],
-        () => {
-            return axios.get(`/reservation`);
+function UseReservationsDate() {
+    // query reservations
+    const {
+        data: reservationDate,
+        isLoading: isLoadingRes,
+        error: resError,
+        refetch: refetchReservation,
+    } = useQuery(["reservations"], () => {
+        return axios.get(`/reservation`);
+    });
+
+    // guery ratings
+    const {
+        data: ratingDate,
+        isLoading: isLoadingRat,
+        error: ratError,
+        refetch: refetchRating,
+    } = useQuery(["ratings"], () => {
+        return axios.get(`/rating`);
+    });
+
+    const extendedReservations = reservationDate?.data.reservations.map(
+        (reservation: any) => {
+            const rating = ratingDate?.data.ratings.find(
+                (rating: any) => rating.reservation_id == reservation.id
+            );
+            return {
+                ...reservation,
+                host_rating: rating?.host_rating ?? null,
+                accommodation_rating: rating?.accommodation_rating ?? null,
+            };
         }
     );
-    const 
 
-    const reservations = data?.data.reservations ?? [];
-
-    return {reservations};
+    return {
+        reservations: extendedReservations ?? [],
+        isLoading: isLoadingRes || isLoadingRat,
+        error: resError || ratError,
+        refetch: () => {
+            refetchReservation();
+            refetchRating();
+        },
+    };
 }
 
 export default function Reservations() {
@@ -203,45 +234,45 @@ export default function Reservations() {
                                                             </TableCell>
                                                             <TableCell>
                                                                 <>
-                                                                {ShowCancleCondition(
-                                                                    row
-                                                                ) && (
-                                                                    <>
-                                                                        <Button
-                                                                            variant="contained"
-                                                                            color="success"
-                                                                            onClick={() =>
-                                                                                mutation.mutate(
-                                                                                    {
-                                                                                        accommodation_id:
-                                                                                            row.accommodation_id,
-                                                                                        id: row.id,
-                                                                                        status: "CANCELLED",
-                                                                                    }
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            Cancel
-                                                                        </Button>
-                                                                    </>
-                                                                )}
-                                                                {ShowRatingCondition(
-                                                                    row
-                                                                ) && (
-                                                                    <>
-                                                                        <Button
-                                                                            variant="contained"
-                                                                            color="success"
-                                                                            onClick={() =>
-                                                                                router.push(
-                                                                                    `/reservation/${row.id}/rating`
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            Rate
-                                                                        </Button>
-                                                                    </>
-                                                                )}
+                                                                    {ShowCancleCondition(
+                                                                        row
+                                                                    ) && (
+                                                                        <>
+                                                                            <Button
+                                                                                variant="contained"
+                                                                                color="success"
+                                                                                onClick={() =>
+                                                                                    mutation.mutate(
+                                                                                        {
+                                                                                            accommodation_id:
+                                                                                                row.accommodation_id,
+                                                                                            id: row.id,
+                                                                                            status: "CANCELLED",
+                                                                                        }
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                Cancel
+                                                                            </Button>
+                                                                        </>
+                                                                    )}
+                                                                    {ShowRatingCondition(
+                                                                        row
+                                                                    ) && (
+                                                                        <>
+                                                                            <Button
+                                                                                variant="contained"
+                                                                                color="success"
+                                                                                onClick={() =>
+                                                                                    router.push(
+                                                                                        `/reservation/${row.id}/rating`
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                Rate
+                                                                            </Button>
+                                                                        </>
+                                                                    )}
                                                                 </>
                                                             </TableCell>
                                                         </TableRow>
