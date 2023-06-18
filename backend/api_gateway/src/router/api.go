@@ -6,6 +6,7 @@ import (
 	"api.accommodation.com/src/client"
 	"api.accommodation.com/src/handler/accommodation"
 	"api.accommodation.com/src/handler/auth"
+	"api.accommodation.com/src/handler/rating"
 	"api.accommodation.com/src/handler/reservation"
 	"api.accommodation.com/src/middleware"
 	"github.com/gin-gonic/gin"
@@ -93,6 +94,18 @@ func ApiRouter(r *gin.RouterGroup, clients *client.Clients) {
 
 	guestGroup.GET("/reservation", func(ctx *gin.Context) {
 		reservation.GetReservationsForGuestHandler(ctx, clients)
+	})
+
+	guestGroup.PUT("/reservation/:id/rating", func(ctx *gin.Context) {
+		rating.ModifyRatingHandler(ctx, clients)
+	})
+
+	guestGroup.GET("/rating", func(ctx *gin.Context) {
+		rating.MyRatingsHandler(ctx, clients)
+	})
+
+	guestGroup.DELETE("/reservation/:id/rating", func(ctx *gin.Context) {
+		rating.RemoveRatingHandler(ctx, clients)
 	})
 
 }

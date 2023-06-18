@@ -41,6 +41,27 @@ function ShowCancleCondition(reservation: any) {
     );
 }
 
+function ShowRatingCondition(reservation: any) {
+    return (
+        reservation.status == "APPROVED" &&
+        dayjs(reservation.end_date.split(" ")[0]) < dayjs()
+    );
+}
+
+function UseReservationsDate(){
+    const { data: reservationDate, isLoading: isLoadingRes, error: resError, refetch: refetchReservation } = useQuery(
+        ["reservations"],
+        () => {
+            return axios.get(`/reservation`);
+        }
+    );
+    const 
+
+    const reservations = data?.data.reservations ?? [];
+
+    return {reservations};
+}
+
 export default function Reservations() {
     const router = useRouter();
 
@@ -181,6 +202,7 @@ export default function Reservations() {
                                                                 />
                                                             </TableCell>
                                                             <TableCell>
+                                                                <>
                                                                 {ShowCancleCondition(
                                                                     row
                                                                 ) && (
@@ -203,6 +225,24 @@ export default function Reservations() {
                                                                         </Button>
                                                                     </>
                                                                 )}
+                                                                {ShowRatingCondition(
+                                                                    row
+                                                                ) && (
+                                                                    <>
+                                                                        <Button
+                                                                            variant="contained"
+                                                                            color="success"
+                                                                            onClick={() =>
+                                                                                router.push(
+                                                                                    `/reservation/${row.id}/rating`
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            Rate
+                                                                        </Button>
+                                                                    </>
+                                                                )}
+                                                                </>
                                                             </TableCell>
                                                         </TableRow>
                                                     )

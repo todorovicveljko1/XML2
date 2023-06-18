@@ -3,40 +3,28 @@ option go_package = "./pb";
 
 service RatingService {
     // Host rating
-    rpc HostRating (RatingIdRequest) returns (RatingResponse) {} // host_id
-    rpc RateHost (RateRequest) returns (RateResponse) {} // id -> host_id
-    rpc RemoveHostRating (RemoveRatingRequest) returns (RemoveRatingResponse) {} // id -> host_id
-
-    rpc GetMyHostRating (RatingIdRequest) returns (HostRatingList) {} // user_id
-
+    rpc HostRating (RatingIdRequest) returns (RatingResponse) {}
     // Accommodation rating
-    rpc AccommodationRating (RatingIdRequest) returns (RatingResponse) {}  // accommodation_id
-    rpc RateAccommodation (RateRequest) returns (RateResponse) {} // id -> accommodation_id
-    rpc RemoveAccommodationRating (RemoveRatingRequest) returns (RemoveRatingResponse) {} // id -> accommodation_id
+    rpc AccommodationRating (RatingIdRequest) returns (RatingResponse) {}
 
-    rpc GetMyAccommodationRating (RatingIdRequest) returns (AccommodationRatingList) {} // user_id
+    // Rating requests
+    rpc Rate (RateRequest) returns (RateResponse) {}
+    rpc RemoveRating (RemoveRatingRequest) returns (RemoveRatingResponse) {}
+    rpc GetMyRatings (RatingIdRequest) returns (RatingList) {}
 }
 
-message HostRating{
+message Rating{
     string id = 1;
-    string host_id = 2;
-    string user_id = 3;
-    int32 rating = 4;
+    string reservation_id = 2;
+    string host_id = 3;
+    string accommodation_id = 4;
+    string user_id = 5;
+    int32 host_rating = 6;
+    int32 accommodation_rating = 7;
 }
 
-message HostRatingList{
-    repeated HostRating ratings = 1;
-}
-
-message AccommodationRating{
-    string id = 1;
-    string accommodation_id = 2;
-    string user_id = 3;
-    int32 rating = 4;
-}
-
-message AccommodationRatingList{
-    repeated AccommodationRating ratings = 1;
+message RatingList{
+    repeated Rating ratings = 1;
 }
 
 message RatingIdRequest {
@@ -48,9 +36,12 @@ message RatingResponse {
 }
 
 message RateRequest {
-    string id = 1; // host_id or accommodation_id
-    string user_id = 2;
-    int32 rating = 3;
+    string reservation_id = 1;
+    string host_id = 2;
+    string accommodation_id = 3;
+    string user_id = 4;
+    int32 host_rating = 5;
+    int32 accommodation_rating = 6;
 }
 
 message RateResponse {
@@ -58,7 +49,7 @@ message RateResponse {
 }
 
 message RemoveRatingRequest {
-    string id = 1; // host_id or accommodation_id
+    string id = 1;
     string user_id = 2;
 }
 

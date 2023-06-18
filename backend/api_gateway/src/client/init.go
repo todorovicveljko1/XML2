@@ -33,6 +33,7 @@ type Clients struct {
 	AuthClient          pb.AuthClient
 	AccommodationClient pb.AccommodationServiceClient
 	ReservationClient   pb.ReservationServiceClient
+	RatingClient        pb.RatingServiceClient
 }
 
 func InitClients(cfg *config.Config) *Clients {
@@ -58,6 +59,12 @@ func InitClients(cfg *config.Config) *Clients {
 		panic(err)
 	}
 
+	retConn, err := grpc.DialContext(ctx, cfg.RetAddress, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Println("Can't connect to rating servise")
+		panic(err)
+	}
+
 	nc, err := nats.Connect(cfg.NatsAddress)
 	if err != nil {
 		log.Println("Can't connect to NATS server")
@@ -75,6 +82,7 @@ func InitClients(cfg *config.Config) *Clients {
 		AuthClient:          AuthGRPCClient(authConn),
 		AccommodationClient: AccommodationGRPCClient(accConn),
 		ReservationClient:   ReservationGRPCClient(resConn),
+		RatingClient:        RatingGRPCClient(retConn),
 	}
 }
 
