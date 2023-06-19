@@ -71,13 +71,13 @@ func CreateReservationHandler(ctx *gin.Context, clients *client.Clients) {
 	// Send notification to host
 	notificationMsg := "New reservation created for your accommodation " + accommodation.Accommodation.Name +
 		" in period " + request.StartDate + " - " + request.EndDate +
-		". Number of guests: " + string(request.NumberOfGuests) + " and price: " + fmt.Sprintf("%f", request.Price) + "$" + "."
+		". Number of guests: " + fmt.Sprintf("%d", request.NumberOfGuests) + " and price: " + fmt.Sprintf("%f", request.Price) + "$" + "."
 
 	helper.SendNotification(ctx, clients, &helper.Notification{
 		Type:       helper.ReservationCreated,
 		ResourceId: reservation.Id,
 		Body:       notificationMsg,
-		UserId:     notificationMsg,
+		UserId:     accommodation.Accommodation.UserId,
 	})
 	// Send notification to user
 

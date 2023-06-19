@@ -85,8 +85,9 @@ function UseReservationsDate() {
             );
             return {
                 ...reservation,
-                host_rating: rating?.host_rating as number ?? null,
-                accommodation_rating: rating?.accommodation_rating as number ?? null,
+                host_rating: (rating?.host_rating as number) ?? null,
+                accommodation_rating:
+                    (rating?.accommodation_rating as number) ?? null,
             };
         }
     );
@@ -133,7 +134,8 @@ export default function Reservations() {
     );
 
     const removeRatingMutation = useMutation(
-        (data: { id: string }) => axios.delete(`/reservation/${data.id}/rating`),
+        (data: { id: string }) =>
+            axios.delete(`/reservation/${data.id}/rating`),
         {
             onSuccess: () => {
                 enqueueSnackbar("Rating removed", { variant: "success" });
@@ -193,7 +195,8 @@ export default function Reservations() {
                                                         Status
                                                     </TableCell>
                                                     <TableCell>
-                                                        Rating (Host / Accommodation)
+                                                        Rating (Host /
+                                                        Accommodation)
                                                     </TableCell>
                                                     <TableCell>
                                                         Actions
@@ -256,12 +259,19 @@ export default function Reservations() {
                                                                 />
                                                             </TableCell>
                                                             <TableCell>
-                                                                <Chip
-                                                                    
-                                                                    label={
-                                                                        `${row.host_rating ?? "Not rated"} / ${row.accommodation_rating ?? "Not rated"}`
-                                                                    }
-                                                                />
+                                                                {ShowRatingCondition(
+                                                                    row
+                                                                ) && (
+                                                                    <Chip
+                                                                        label={`${
+                                                                            row.host_rating ??
+                                                                            "Not rated"
+                                                                        } / ${
+                                                                            row.accommodation_rating ??
+                                                                            "Not rated"
+                                                                        }`}
+                                                                    />
+                                                                )}
                                                             </TableCell>
                                                             <TableCell>
                                                                 <>
@@ -294,7 +304,9 @@ export default function Reservations() {
                                                                             <Button
                                                                                 variant="contained"
                                                                                 color="success"
-                                                                                sx={{ mr: 1 }}
+                                                                                sx={{
+                                                                                    mr: 1,
+                                                                                }}
                                                                                 onClick={() =>
                                                                                     router.push(
                                                                                         `/reservation/${row.id}/rating`
@@ -313,12 +325,15 @@ export default function Reservations() {
                                                                                 variant="contained"
                                                                                 color="success"
                                                                                 onClick={() =>
-                                                                                    removeRatingMutation.mutate({
-                                                                                        id: row.id,
-                                                                                    })
+                                                                                    removeRatingMutation.mutate(
+                                                                                        {
+                                                                                            id: row.id,
+                                                                                        }
+                                                                                    )
                                                                                 }
                                                                             >
-                                                                                Remove Rating
+                                                                                Remove
+                                                                                Rating
                                                                             </Button>
                                                                         </>
                                                                     )}

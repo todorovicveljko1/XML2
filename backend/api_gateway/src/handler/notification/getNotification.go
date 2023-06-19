@@ -26,6 +26,10 @@ func GetNotificationHandler(ctx *gin.Context, clients *client.Clients) {
 		helper.PrettyGRPCError(ctx, err)
 		return
 	}
+	if res.Notifications == nil {
+		ctx.JSON(200, []string{})
+		return
+	}
 
 	ctx.JSON(200, res.Notifications)
 

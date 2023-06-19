@@ -1,5 +1,6 @@
 import axios from "@/axios";
 import { ChangePasswordForm } from "@/components/Forms/ChangePasswordForm";
+import { NotificationSettings } from "@/components/Forms/NotificationSettings";
 import { UpdateProfileForm } from "@/components/Forms/UpdateProfileForm";
 import MainLayout from "@/components/Layout/MainLayout";
 import { AuthWraper, useAuth } from "@/providers/authProvider";
@@ -9,14 +10,14 @@ import { enqueueSnackbar } from "notistack";
 import { useMutation } from "react-query";
 
 function Profile() {
-    const {logout} = useAuth()
+    const { logout } = useAuth();
     const mutation = useMutation(
         () => {
             return axios.delete("/auth");
         },
         {
             onSuccess(data, variables, context) {
-                logout()
+                logout();
                 enqueueSnackbar({
                     message: "Succesfully deleted profile",
                     variant: "success",
@@ -25,7 +26,6 @@ function Profile() {
             onError(error: any, variables, context) {
                 enqueueSnackbar({
                     message:
-
                         error?.response?.data?.error ??
                         error?.message ??
                         "Error",
@@ -50,6 +50,8 @@ function Profile() {
                         <Divider />
                         <ChangePasswordForm />
                         <Divider />
+                        <NotificationSettings />
+                        <Divider />
                         <Stack p={3}>
                             <Typography variant="h6" gutterBottom>
                                 Delete profile
@@ -57,16 +59,16 @@ function Profile() {
                             <Typography variant="body2" gutterBottom>
                                 This action is irreversible. All your data will
                                 be deleted.
-                                </Typography>
-                                <LoadingButton
-                                    variant="contained"
-                                    color="error"
-                                    loading={mutation.isLoading}
-                                    onClick={()=>mutation.mutate()}
-                                >
-                                    Delete profile
-                                </LoadingButton>
-                            </Stack>
+                            </Typography>
+                            <LoadingButton
+                                variant="contained"
+                                color="error"
+                                loading={mutation.isLoading}
+                                onClick={() => mutation.mutate()}
+                            >
+                                Delete profile
+                            </LoadingButton>
+                        </Stack>
                     </Paper>
                 </Container>
             </AuthWraper>

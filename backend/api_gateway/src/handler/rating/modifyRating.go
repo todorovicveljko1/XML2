@@ -1,6 +1,8 @@
 package rating
 
 import (
+	"fmt"
+
 	"api.accommodation.com/pb"
 	"api.accommodation.com/src/client"
 	"api.accommodation.com/src/helper"
@@ -69,7 +71,7 @@ func ModifyRatingHandler(ctx *gin.Context, clients *client.Clients) {
 		notificationMsg = "User updated rating for your accommodation " + accommodation.Accommodation.Name
 	}
 
-	notificationMsg += " with " + string(request.AccommodationRating) + " stars" + " and you with " + string(request.HostRating) + " stars"
+	notificationMsg += " with " + fmt.Sprintf("%d", request.AccommodationRating) + " stars" + " and you with " + fmt.Sprintf("%d", request.AccommodationRating) + " stars"
 
 	// send notification to host
 	helper.SendNotification(ctx, clients, &helper.Notification{

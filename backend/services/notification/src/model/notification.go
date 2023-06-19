@@ -9,13 +9,13 @@ import (
 
 // mongodb model
 type Notification struct {
-	Id         primitive.ObjectID `bson:"_id,omitempty"`
-	Type       string             `bson:"type,omitempty"`
-	ResourceId string             `bson:"resource_id,omitempty"`
-	Body       string             `bson:"body,omitempty"`
-	UserId     primitive.ObjectID `bson:"user_id,omitempty"`
-	IsRead     bool               `bson:"is_read,omitempty"`
-	CreatedAt  time.Time          `bson:"created_at,omitempty"`
+	Id         primitive.ObjectID `bson:"_id"`
+	Type       string             `bson:"type"`
+	ResourceId string             `bson:"resource_id"`
+	Body       string             `bson:"body"`
+	UserId     primitive.ObjectID `bson:"user_id"`
+	IsRead     bool               `bson:"is_read"`
+	CreatedAt  time.Time          `bson:"created_at"`
 }
 
 // model -> proto
