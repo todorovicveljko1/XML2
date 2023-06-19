@@ -86,6 +86,7 @@ message ResponseMessage {
   string message = 1;
 }
 
+
 message AddAvailabilityRequest {
   string id = 1;
   AvailableInterval availability = 2;

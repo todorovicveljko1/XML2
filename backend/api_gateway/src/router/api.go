@@ -35,6 +35,10 @@ func ApiRouter(r *gin.RouterGroup, clients *client.Clients) {
 		accommodation.GetAccommodationHandler(ctx, clients)
 	})
 
+	r.GET("/accommodation/:id/rating", func(ctx *gin.Context) {
+		rating.GetRatingHandler(ctx, clients)
+	})
+
 	// ----------------- AUTH ROUTES -----------------
 	authGroup := r.Group("/")
 	authGroup.Use(middleware.Authorized(clients))

@@ -290,7 +290,8 @@ func (s *Server) SearchAccommodations(parent context.Context, dto *pb.SearchRequ
 		filter["max_guests"] = bson.M{"$gte": *dto.NumGuests}
 	}
 	if dto.Amenity != nil && len(dto.Amenity) != 0 && dto.Amenity[0] != "" {
-		filter["amenity"] = bson.M{"$in": dto.Amenity}
+		// filter so that all amenities are in the array
+		filter["amenity"] = bson.M{"$all": dto.Amenity}
 	}
 	if dto.ShowMy {
 		userId, err := primitive.ObjectIDFromHex(dto.UserId)

@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"reservation.accommodation.com/config"
@@ -90,6 +91,11 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 		return nil, status.Error(codes.InvalidArgument, "Invalid accommodation id")
 	}
 
+	hostId, err := primitive.ObjectIDFromHex(dto.HostId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid host id")
+	}
+
 	// parse dates
 	startDate, err := time.Parse(time.RFC3339, dto.StartDate)
 	if err != nil {
@@ -106,6 +112,7 @@ func (s *Server) CreateReservation(parent context.Context, dto *pb.CreateReserva
 	reservation := model.Reservation{
 		Id:              primitive.NewObjectID(),
 		UserId:          userId,
+		HostId:          hostId,
 		AccommodationId: accommodationId,
 		Status:          "PENDING",
 		Price:           dto.Price,
@@ -301,7 +308,11 @@ func (s *Server) GetReservationsForGuest(parent context.Context, dto *pb.IdReque
 		return nil, status.Error(codes.InvalidArgument, "Invalid user id")
 	}
 
-	cursor, err := s.res_collection.Find(ctx, bson.M{"user_id": userId})
+	cursor, err := s.res_collection.Find(ctx, bson.M{"user_id": userId}, &options.FindOptions{
+		Sort: bson.M{
+			"start_date": 1,
+		},
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error while fetching reservations")
 	}
@@ -332,8 +343,12 @@ func (s *Server) GetReservationsForAccommodation(parent context.Context, dto *pb
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "Invalid accommodation id")
 	}
-
-	cursor, err := s.res_collection.Find(ctx, bson.M{"accommodation_id": accommodationId})
+	// sort by start date
+	cursor, err := s.res_collection.Find(ctx, bson.M{"accommodation_id": accommodationId}, &options.FindOptions{
+		Sort: bson.M{
+			"start_date": 1,
+		},
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error while fetching reservations")
 	}
@@ -422,9 +437,6 @@ func (s *Server) FilterOutTakenAccommodations(parent context.Context, dto *pb.Fi
 		}
 		takenAccommodationIds = append(takenAccommodationIds, reservation.AccommodationId.Hex())
 	}
-
-	log.Println(takenAccommodationIds)
-
 	// Filter out taken accommodations
 	availableAccommodationIds := []string{}
 	for _, accommodationId := range accommodationIds {
@@ -618,4 +630,309 @@ func (a *Server) checkReservationIntervals(ctx context.Context, reservation mode
 		affectedIntervals = append(affectedIntervals, reservations)
 	}
 	return affectedIntervals, nil
+}
+
+func (a *Server) CheckForSuperHost(parent context.Context, dto *pb.IdRequest) (*pb.BoolResponse, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+	// Cancalation rate less then 5%
+	// Total number of reservations is greather then 5
+	// Total duration of reservations is greather then 50 days
+
+	userId, err := primitive.ObjectIDFromHex(dto.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid user id")
+	}
+
+	cursor, err := a.res_collection.Aggregate(ctx, mongo.Pipeline{
+		bson.D{{Key: "$match", Value: bson.D{{Key: "host_id", Value: userId}}}},
+		bson.D{
+			{Key: "$group",
+				Value: bson.D{
+					{Key: "_id", Value: "$host_id"},
+					{Key: "days",
+						Value: bson.D{
+							{Key: "$sum",
+								Value: bson.D{
+									{Key: "$cond",
+										Value: bson.A{
+											bson.D{
+												{Key: "$eq",
+													Value: bson.A{
+														"$status",
+														"APPROVED",
+													},
+												},
+											},
+											bson.D{
+												{Key: "$dateDiff",
+													Value: bson.D{
+														{Key: "startDate", Value: "$start_date"},
+														{Key: "endDate", Value: "$end_date"},
+														{Key: "unit", Value: "day"},
+													},
+												},
+											},
+											0,
+										},
+									},
+								},
+							},
+						},
+					},
+					{Key: "total_app",
+						Value: bson.D{
+							{Key: "$sum",
+								Value: bson.D{
+									{Key: "$cond",
+										Value: bson.A{
+											bson.D{
+												{Key: "$eq",
+													Value: bson.A{
+														"$status",
+														"APPROVED",
+													},
+												},
+											},
+											1,
+											0,
+										},
+									},
+								},
+							},
+						},
+					},
+					{Key: "total_rej",
+						Value: bson.D{
+							{Key: "$sum",
+								Value: bson.D{
+									{Key: "$cond",
+										Value: bson.A{
+											bson.D{
+												{Key: "$eq",
+													Value: bson.A{
+														"$status",
+														"REJECTION",
+													},
+												},
+											},
+											1,
+											0,
+										},
+									},
+								},
+							},
+						},
+					},
+					{Key: "total", Value: bson.D{{Key: "$sum", Value: 1}}},
+				},
+			},
+		},
+		bson.D{
+			{Key: "$addFields",
+				Value: bson.D{
+					{Key: "percent",
+						Value: bson.D{
+							{Key: "$divide",
+								Value: bson.A{
+									"$total_rej",
+									"$total",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		bson.D{
+			{Key: "$match",
+				Value: bson.D{
+					{Key: "days", Value: bson.D{{Key: "$gte", Value: 50}}},
+					{Key: "total_app", Value: bson.D{{Key: "$gte", Value: 5}}},
+					{Key: "percent", Value: bson.D{{Key: "$lte", Value: 0.05}}},
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while fetching reservations")
+	}
+
+	defer cursor.Close(ctx)
+
+	hasSuperHost := false
+	for cursor.Next(ctx) {
+		hasSuperHost = true
+		break
+	}
+
+	return &pb.BoolResponse{
+		Value: hasSuperHost,
+	}, nil
+}
+func (a *Server) GetHostIdsForSuperHost(parent context.Context, dto *pb.IdList) (*pb.IdList, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+	// convert ids to object ids
+	var hostIds []primitive.ObjectID
+
+	for _, id := range dto.Ids {
+		hostId, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "Invalid host id")
+		}
+		hostIds = append(hostIds, hostId)
+	}
+
+	// Cancalation rate less then 5%
+	// Total number of reservations is greather then 5
+	// Total duration of reservations is greather then 50 days
+	cursor, err := a.res_collection.Aggregate(ctx, mongo.Pipeline{
+		bson.D{{Key: "$match", Value: bson.D{{Key: "host_id", Value: bson.D{{Key: "$in", Value: hostIds}}}}}},
+		bson.D{
+			{Key: "$group",
+				Value: bson.D{
+					{Key: "_id", Value: "$host_id"},
+					{Key: "days",
+						Value: bson.D{
+							{Key: "$sum",
+								Value: bson.D{
+									{Key: "$cond",
+										Value: bson.A{
+											bson.D{
+												{Key: "$eq",
+													Value: bson.A{
+														"$status",
+														"APPROVED",
+													},
+												},
+											},
+											bson.D{
+												{Key: "$dateDiff",
+													Value: bson.D{
+														{Key: "startDate", Value: "$start_date"},
+														{Key: "endDate", Value: "$end_date"},
+														{Key: "unit", Value: "day"},
+													},
+												},
+											},
+											0,
+										},
+									},
+								},
+							},
+						},
+					},
+					{Key: "total_app",
+						Value: bson.D{
+							{Key: "$sum",
+								Value: bson.D{
+									{Key: "$cond",
+										Value: bson.A{
+											bson.D{
+												{Key: "$eq",
+													Value: bson.A{
+														"$status",
+														"APPROVED",
+													},
+												},
+											},
+											1,
+											0,
+										},
+									},
+								},
+							},
+						},
+					},
+					{Key: "total_rej",
+						Value: bson.D{
+							{Key: "$sum",
+								Value: bson.D{
+									{Key: "$cond",
+										Value: bson.A{
+											bson.D{
+												{Key: "$eq",
+													Value: bson.A{
+														"$status",
+														"REJECTION",
+													},
+												},
+											},
+											1,
+											0,
+										},
+									},
+								},
+							},
+						},
+					},
+					{Key: "total", Value: bson.D{{Key: "$sum", Value: 1}}},
+				},
+			},
+		},
+		bson.D{
+			{Key: "$addFields",
+				Value: bson.D{
+					{Key: "percent",
+						Value: bson.D{
+							{Key: "$divide",
+								Value: bson.A{
+									"$total_rej",
+									"$total",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		bson.D{
+			{Key: "$match",
+				Value: bson.D{
+					{Key: "days", Value: bson.D{{Key: "$gte", Value: 50}}},
+					{Key: "total_app", Value: bson.D{{Key: "$gte", Value: 5}}},
+					{Key: "percent", Value: bson.D{{Key: "$lte", Value: 0.05}}},
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while fetching reservations")
+	}
+	/*
+		_id 64568770f8b3d91194d536f3
+		days 25
+		total_app 4
+		total_rej 0
+		total 4
+		percent 0
+	*/
+	type DocsStruct struct {
+		Id       primitive.ObjectID `bson:"_id"`
+		Days     int                `bson:"days"`
+		TotalApp int                `bson:"total_app"`
+		TotalRej int                `bson:"total_rej"`
+		Total    int                `bson:"total"`
+		Percent  int                `bson:"percent"`
+	}
+
+	defer cursor.Close(ctx)
+	// filter out host ids
+	superHostIds := []string{}
+	for cursor.Next(ctx) {
+		docs := &DocsStruct{}
+		if err = cursor.Decode(docs); err != nil {
+			return nil, err
+		}
+
+		superHostIds = append(superHostIds, docs.Id.Hex())
+	}
+
+	return &pb.IdList{
+		Ids: superHostIds,
+	}, nil
+
 }

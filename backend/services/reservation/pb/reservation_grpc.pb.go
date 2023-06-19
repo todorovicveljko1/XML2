@@ -30,6 +30,8 @@ const (
 	ReservationService_HasActiveReservationInInterval_FullMethodName    = "/ReservationService/HasActiveReservationInInterval"
 	ReservationService_HasGuestActiveReservationInFuture_FullMethodName = "/ReservationService/HasGuestActiveReservationInFuture"
 	ReservationService_HasHostActiveReservationInFuture_FullMethodName  = "/ReservationService/HasHostActiveReservationInFuture"
+	ReservationService_CheckForSuperHost_FullMethodName                 = "/ReservationService/CheckForSuperHost"
+	ReservationService_GetHostIdsForSuperHost_FullMethodName            = "/ReservationService/GetHostIdsForSuperHost"
 )
 
 // ReservationServiceClient is the client API for ReservationService service.
@@ -47,6 +49,8 @@ type ReservationServiceClient interface {
 	HasActiveReservationInInterval(ctx context.Context, in *IntervalRequest, opts ...grpc.CallOption) (*BoolResponse, error)
 	HasGuestActiveReservationInFuture(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*BoolResponse, error)
 	HasHostActiveReservationInFuture(ctx context.Context, in *IdList, opts ...grpc.CallOption) (*BoolResponse, error)
+	CheckForSuperHost(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*BoolResponse, error)
+	GetHostIdsForSuperHost(ctx context.Context, in *IdList, opts ...grpc.CallOption) (*IdList, error)
 }
 
 type reservationServiceClient struct {
@@ -156,6 +160,24 @@ func (c *reservationServiceClient) HasHostActiveReservationInFuture(ctx context.
 	return out, nil
 }
 
+func (c *reservationServiceClient) CheckForSuperHost(ctx context.Context, in *IdRequest, opts ...grpc.CallOption) (*BoolResponse, error) {
+	out := new(BoolResponse)
+	err := c.cc.Invoke(ctx, ReservationService_CheckForSuperHost_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reservationServiceClient) GetHostIdsForSuperHost(ctx context.Context, in *IdList, opts ...grpc.CallOption) (*IdList, error) {
+	out := new(IdList)
+	err := c.cc.Invoke(ctx, ReservationService_GetHostIdsForSuperHost_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReservationServiceServer is the server API for ReservationService service.
 // All implementations must embed UnimplementedReservationServiceServer
 // for forward compatibility
@@ -171,6 +193,8 @@ type ReservationServiceServer interface {
 	HasActiveReservationInInterval(context.Context, *IntervalRequest) (*BoolResponse, error)
 	HasGuestActiveReservationInFuture(context.Context, *IdRequest) (*BoolResponse, error)
 	HasHostActiveReservationInFuture(context.Context, *IdList) (*BoolResponse, error)
+	CheckForSuperHost(context.Context, *IdRequest) (*BoolResponse, error)
+	GetHostIdsForSuperHost(context.Context, *IdList) (*IdList, error)
 	mustEmbedUnimplementedReservationServiceServer()
 }
 
@@ -210,6 +234,12 @@ func (UnimplementedReservationServiceServer) HasGuestActiveReservationInFuture(c
 }
 func (UnimplementedReservationServiceServer) HasHostActiveReservationInFuture(context.Context, *IdList) (*BoolResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HasHostActiveReservationInFuture not implemented")
+}
+func (UnimplementedReservationServiceServer) CheckForSuperHost(context.Context, *IdRequest) (*BoolResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckForSuperHost not implemented")
+}
+func (UnimplementedReservationServiceServer) GetHostIdsForSuperHost(context.Context, *IdList) (*IdList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetHostIdsForSuperHost not implemented")
 }
 func (UnimplementedReservationServiceServer) mustEmbedUnimplementedReservationServiceServer() {}
 
@@ -422,6 +452,42 @@ func _ReservationService_HasHostActiveReservationInFuture_Handler(srv interface{
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReservationService_CheckForSuperHost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReservationServiceServer).CheckForSuperHost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReservationService_CheckForSuperHost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReservationServiceServer).CheckForSuperHost(ctx, req.(*IdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReservationService_GetHostIdsForSuperHost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IdList)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReservationServiceServer).GetHostIdsForSuperHost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReservationService_GetHostIdsForSuperHost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReservationServiceServer).GetHostIdsForSuperHost(ctx, req.(*IdList))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ReservationService_ServiceDesc is the grpc.ServiceDesc for ReservationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -472,6 +538,14 @@ var ReservationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "HasHostActiveReservationInFuture",
 			Handler:    _ReservationService_HasHostActiveReservationInFuture_Handler,
+		},
+		{
+			MethodName: "CheckForSuperHost",
+			Handler:    _ReservationService_CheckForSuperHost_Handler,
+		},
+		{
+			MethodName: "GetHostIdsForSuperHost",
+			Handler:    _ReservationService_GetHostIdsForSuperHost_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -19,6 +19,9 @@ const DEFAULT_QUERY = {
     end_date: dayjs().add(6, "day"),
     amenity: [],
     show_my: false,
+    show_super_hosts: false,
+    price_min: 0,
+    price_max: 0,
 };
 
 function BuildUrlQuert(data: any) {
@@ -32,6 +35,9 @@ function BuildUrlQuert(data: any) {
             end_date:
                 data.end_date && dayjs(data.end_date as string).toISOString(),
             show_my: data.show_my ? 1 : 0,
+            show_super_host: data.show_super_host ? 1 : 0,
+            price_min: data.price_min ? data.price_min : 0,
+            price_max: data.price_max ? data.price_max : 0,
         })
     );
 }

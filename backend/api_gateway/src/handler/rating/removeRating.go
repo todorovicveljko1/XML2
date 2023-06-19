@@ -25,13 +25,6 @@ func RemoveRatingHandler(ctx *gin.Context, clients *client.Clients) {
 		return
 	}
 
-	// get accommodation by id
-	accommodation, err := clients.AccommodationClient.GetAccommodation(ctx, &pb.GetAccommodationRequest{Id: reservation.AccommodationId})
-	if err != nil {
-		helper.PrettyGRPCError(ctx, err)
-		return
-	}
-
 	if reservation.UserId != userId.(string) {
 		ctx.AbortWithStatusJSON(401, gin.H{"message": "Unauthorized"})
 		return
@@ -39,7 +32,7 @@ func RemoveRatingHandler(ctx *gin.Context, clients *client.Clients) {
 
 	// remove rating
 	_, err = clients.RatingClient.RemoveRating(ctx, &pb.RemoveRatingRequest{
-		Id:     accommodation.Accommodation.UserId,
+		Id:     reservationId,
 		UserId: userId.(string),
 	})
 	if err != nil {

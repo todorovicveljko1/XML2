@@ -12,6 +12,7 @@ export interface Accommodation {
     is_manual: boolean;
 
     price?: number;
+    is_super_host?: boolean;
 }
 
 export interface CreateAccomodationRequest {

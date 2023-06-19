@@ -43,6 +43,7 @@ func CreateReservationHandler(ctx *gin.Context, clients *client.Clients) {
 	// Create reservation
 	reservation, err := clients.ReservationClient.CreateReservation(ctx, &pb.CreateReservationRequest{
 		UserId:          userId.(string),
+		HostId:          accommodation.Accommodation.UserId,
 		AccommodationId: accommodationId,
 		StartDate:       request.StartDate,
 		EndDate:         request.EndDate,

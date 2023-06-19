@@ -11,6 +11,7 @@ import (
 type Reservation struct {
 	Id              primitive.ObjectID `bson:"_id" json:"id"`
 	UserId          primitive.ObjectID `bson:"user_id" json:"user_id"`
+	HostId          primitive.ObjectID `bson:"host_id" json:"host_id"`
 	AccommodationId primitive.ObjectID `bson:"accommodation_id" json:"accommodation_id"`
 	StartDate       time.Time          `bson:"start_date" json:"start_date"`
 	EndDate         time.Time          `bson:"end_date" json:"end_date"`
@@ -25,6 +26,7 @@ func (r *Reservation) ConvertToPbReservation() *pb.Reservation {
 	return &pb.Reservation{
 		Id:              r.Id.Hex(),
 		UserId:          r.UserId.Hex(),
+		HostId:          r.HostId.Hex(),
 		AccommodationId: r.AccommodationId.Hex(),
 		StartDate:       r.StartDate.String(),
 		EndDate:         r.EndDate.String(),

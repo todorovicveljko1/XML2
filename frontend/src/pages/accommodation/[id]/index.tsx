@@ -30,11 +30,16 @@ export default function AccommodationPage() {
         },
         { enabled: !!id }
     );
+    // get rating {accommodation:number, host:number}
+    const {data: ratingData, isLoading: isLoadingRating} = useQuery(["rating", id], () => {
+        return axios.get(`/accommodation/${id}/rating`);
+    }, {enabled: !!id});
+
     const accommodation = data?.data?.accommodation;
     const available_intervals = data?.data?.available_intervals ?? [];
     const price_intervals = data?.data?.price_intervals ?? [];
 
-    return (
+    return (    
         <MainLayout>
             {isLoading ? (
                 <BackdropLoader text="Loading" />
@@ -49,6 +54,7 @@ export default function AccommodationPage() {
                             <Stack spacing={3}>
                                 <AccommodationInfoLarge
                                     accommodation={accommodation}
+                                    rating={ratingData?.data ?? {accommodation: 0, host: 0}}
                                 />
                                 <AvailableInterval
                                     accommodation={accommodation}

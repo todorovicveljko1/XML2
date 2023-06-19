@@ -37,6 +37,9 @@ export function AccommodationCard({
                         width={"100%"}
                         image={accommodation.photo_url[0]}
                         alt={accommodation.name}
+                        sx={{
+                            aspectRatio: 16 / 9,
+                        }}
                     ></CardMedia>
                 )}
                 <CardContent>

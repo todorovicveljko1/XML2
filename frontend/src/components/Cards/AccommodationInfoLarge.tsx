@@ -8,15 +8,22 @@ import {
     Grid,
     Box,
     Button,
+    Badge,
 } from "@mui/material";
 import { useRouter } from "next/router";
+import StarIcon from "@mui/icons-material/Star";
 
 interface AccommodationInfoLargeProps {
     accommodation: Accommodation;
+    rating: {
+        accommodation: number;
+        host: number;
+    };
 }
 
 export function AccommodationInfoLarge({
     accommodation,
+    rating,
 }: AccommodationInfoLargeProps) {
     const router = useRouter();
     const { user } = useAuth();
@@ -31,12 +38,17 @@ export function AccommodationInfoLarge({
                     <Typography variant="h4" component="h1">
                         {accommodation.name}
                     </Typography>
-                    <Typography variant="h6" component="h2" color="green">
-                        {accommodation.default_price}${" "}
-                        {accommodation.is_price_per_night
-                            ? "/ night"
-                            : "/ guest"}
-                    </Typography>
+                    <Stack direction={"row"} spacing={3} alignItems={"center"}>
+                        <Typography variant="h6" component="h2" color="green">
+                            {accommodation.default_price}${" "}
+                            {accommodation.is_price_per_night
+                                ? "/ night"
+                                : "/ guest"}
+                        </Typography>
+                        {accommodation.is_super_host && (
+                            <StarIcon sx={{ color: "gold" }} fontSize="large" />
+                        )}
+                    </Stack>
                 </Stack>
                 <Stack flexWrap={"wrap"} direction={"row"}>
                     <Chip
@@ -53,6 +65,23 @@ export function AccommodationInfoLarge({
                             sx={{ mt: 1, mr: 1 }}
                         />
                     ))}
+                </Stack>
+                <Stack flexWrap={"wrap"} direction={"row"}>
+                    {rating.accommodation > 0 && rating.host > 0 && (
+                        <>
+                            <Chip
+                        
+                                sx={{ mr: 1 }}
+                                color="success"
+                                label={`Accommodation rating: ${rating.accommodation.toFixed(2)} / 5`}
+                            />
+                            <Chip
+                                sx={{ mr: 1 }}
+                                color="success"
+                                label={`Host rating: ${rating.host.toFixed(2)} / 5`}
+                            />
+                        </>
+                    )}
                 </Stack>
                 <Grid container>
                     {accommodation.photo_url.map((photo: string) => (

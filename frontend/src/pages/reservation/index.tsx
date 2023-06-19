@@ -2,6 +2,7 @@ import axios from "@/axios";
 import MainLayout from "@/components/Layout/MainLayout";
 import BackdropLoader from "@/components/Loaders/backdropLoader";
 import { AuthWraper } from "@/providers/authProvider";
+import { Reservation, ReservationList } from "@/types/reservation";
 import {
     Alert,
     Button,
@@ -48,6 +49,14 @@ function ShowRatingCondition(reservation: any) {
     );
 }
 
+function ShowRemoveRatingCondition(reservation: any) {
+    return (
+        reservation.status == "APPROVED" &&
+        reservation.host_rating != null &&
+        reservation.accommodation_rating != null
+    );
+}
+
 function UseReservationsDate() {
     // query reservations
     const {
@@ -56,7 +65,7 @@ function UseReservationsDate() {
         error: resError,
         refetch: refetchReservation,
     } = useQuery(["reservations"], () => {
-        return axios.get(`/reservation`);
+        return axios.get<ReservationList>(`/reservation`);
     });
 
     // guery ratings
@@ -68,16 +77,16 @@ function UseReservationsDate() {
     } = useQuery(["ratings"], () => {
         return axios.get(`/rating`);
     });
-
-    const extendedReservations = reservationDate?.data.reservations.map(
-        (reservation: any) => {
-            const rating = ratingDate?.data.ratings.find(
+    const ratings = ratingDate?.data.ratings ?? [];
+    const extendedReservations = reservationDate?.data.reservations?.map(
+        (reservation: Reservation) => {
+            const rating = ratings.find(
                 (rating: any) => rating.reservation_id == reservation.id
             );
             return {
                 ...reservation,
-                host_rating: rating?.host_rating ?? null,
-                accommodation_rating: rating?.accommodation_rating ?? null,
+                host_rating: rating?.host_rating as number ?? null,
+                accommodation_rating: rating?.accommodation_rating as number ?? null,
             };
         }
     );
@@ -96,14 +105,7 @@ function UseReservationsDate() {
 export default function Reservations() {
     const router = useRouter();
 
-    const { data, isLoading, error, refetch } = useQuery(
-        ["reservations"],
-        () => {
-            return axios.get(`/reservation`);
-        }
-    );
-
-    const reservations = data?.data.reservations ?? [];
+    const { reservations, isLoading, error, refetch } = UseReservationsDate();
 
     const mutation = useMutation(
         (data: { id: string; status: string; accommodation_id: string }) =>
@@ -130,10 +132,29 @@ export default function Reservations() {
         }
     );
 
+    const removeRatingMutation = useMutation(
+        (data: { id: string }) => axios.delete(`/reservation/${data.id}/rating`),
+        {
+            onSuccess: () => {
+                enqueueSnackbar("Rating removed", { variant: "success" });
+                refetch();
+            },
+            onError(error: any, variables, context) {
+                enqueueSnackbar({
+                    message:
+                        error?.response?.data?.error ??
+                        error?.message ??
+                        "Error",
+                    variant: "error",
+                });
+            },
+        }
+    );
+
     return (
         <MainLayout>
             <AuthWraper roles={["G"]}>
-                <Container maxWidth="md" sx={{ py: 3 }}>
+                <Container maxWidth="lg" sx={{ py: 3 }}>
                     {isLoading ? (
                         <BackdropLoader />
                     ) : error ? (
@@ -141,8 +162,7 @@ export default function Reservations() {
                             Error while getting reservations
                         </Alert>
                     ) : (
-                        data &&
-                        data.data.reservations && (
+                        reservations && (
                             <Paper sx={{ p: 3 }}>
                                 <Stack spacing={3}>
                                     <Typography
@@ -171,6 +191,9 @@ export default function Reservations() {
                                                     <TableCell>Price</TableCell>
                                                     <TableCell>
                                                         Status
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        Rating (Host / Accommodation)
                                                     </TableCell>
                                                     <TableCell>
                                                         Actions
@@ -233,6 +256,14 @@ export default function Reservations() {
                                                                 />
                                                             </TableCell>
                                                             <TableCell>
+                                                                <Chip
+                                                                    
+                                                                    label={
+                                                                        `${row.host_rating ?? "Not rated"} / ${row.accommodation_rating ?? "Not rated"}`
+                                                                    }
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell>
                                                                 <>
                                                                     {ShowCancleCondition(
                                                                         row
@@ -263,6 +294,7 @@ export default function Reservations() {
                                                                             <Button
                                                                                 variant="contained"
                                                                                 color="success"
+                                                                                sx={{ mr: 1 }}
                                                                                 onClick={() =>
                                                                                     router.push(
                                                                                         `/reservation/${row.id}/rating`
@@ -270,6 +302,23 @@ export default function Reservations() {
                                                                                 }
                                                                             >
                                                                                 Rate
+                                                                            </Button>
+                                                                        </>
+                                                                    )}
+                                                                    {ShowRemoveRatingCondition(
+                                                                        row
+                                                                    ) && (
+                                                                        <>
+                                                                            <Button
+                                                                                variant="contained"
+                                                                                color="success"
+                                                                                onClick={() =>
+                                                                                    removeRatingMutation.mutate({
+                                                                                        id: row.id,
+                                                                                    })
+                                                                                }
+                                                                            >
+                                                                                Remove Rating
                                                                             </Button>
                                                                         </>
                                                                     )}
