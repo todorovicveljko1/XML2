@@ -44,6 +44,16 @@ func HandleReservationStatusChange(ctx *gin.Context, clients *client.Clients) {
 		return
 	}
 
+	// Get accommodation
+	accommodation, err := clients.AccommodationClient.GetAccommodation(ctx, &pb.GetAccommodationRequest{
+		Id: accommodationId,
+	})
+
+	if err != nil {
+		ctx.AbortWithStatusJSON(404, gin.H{"message": "Accommodation not found"})
+		return
+	}
+
 	if role.(string) == "G" {
 		if reservation.UserId != userId.(string) {
 			ctx.AbortWithStatusJSON(401, gin.H{"message": "Unauthorized"})
@@ -58,6 +68,14 @@ func HandleReservationStatusChange(ctx *gin.Context, clients *client.Clients) {
 				helper.PrettyGRPCError(ctx, err)
 				return
 			}
+			// Send notification to host
+			helper.SendNotification(ctx, clients, &helper.Notification{
+				Type:       helper.ReservationCanceled,
+				ResourceId: reservationId,
+				Body:       "Reservation cancelled for accommodation" + accommodation.Accommodation.Name + " in period" + reservation.StartDate + " - " + reservation.EndDate + ".",
+				UserId:     reservation.HostId,
+			})
+
 			ctx.JSON(200, gin.H{"message": "Reservation cancelled"})
 			return
 		}
@@ -90,6 +108,15 @@ func HandleReservationStatusChange(ctx *gin.Context, clients *client.Clients) {
 				helper.PrettyGRPCError(ctx, err)
 				return
 			}
+
+			// Send notification to guest
+			helper.SendNotification(ctx, clients, &helper.Notification{
+				Type:       helper.ReservationAccepted,
+				ResourceId: reservationId,
+				Body:       "Reservation accepted for accommodation" + accommodation.Accommodation.Name + " in period" + reservation.StartDate + " - " + reservation.EndDate + ".",
+				UserId:     reservation.UserId,
+			})
+
 			ctx.JSON(200, gin.H{"message": "Reservation approved"})
 			return
 		}
@@ -104,6 +131,15 @@ func HandleReservationStatusChange(ctx *gin.Context, clients *client.Clients) {
 				helper.PrettyGRPCError(ctx, err)
 				return
 			}
+
+			// Send notification to guest
+			helper.SendNotification(ctx, clients, &helper.Notification{
+				Type:       helper.ReservationRejected,
+				ResourceId: reservationId,
+				Body:       "Reservation rejected for accommodation" + accommodation.Accommodation.Name + " in period" + reservation.StartDate + " - " + reservation.EndDate + ".",
+				UserId:     reservation.UserId,
+			})
+
 			ctx.JSON(200, gin.H{"message": "Reservation rejected"})
 			return
 		}

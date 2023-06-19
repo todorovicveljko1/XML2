@@ -1,0 +1,71 @@
+syntax = "proto3";
+option go_package = "./pb";
+
+service NotificationService {
+    rpc SendNotification (SendNotificationRequest) returns (SendNotificationResponse) {}
+    rpc GetNotifications (GetNotificationRequest) returns (GetNotificationResponse) {}
+    rpc MarkNotificationAsRead (MarkNotificationAsReadRequest) returns (MarkNotificationAsReadResponse) {}
+    rpc ChangeNotifcationSettings (ChangeNotifcationSettingsRequest) returns (ChangeNotifcationSettingsResponse) {}
+    rpc GetNotificationSettings (GetNotificationSettingsRequest) returns (GetNotificationSettingsResponse) {}
+}
+
+message Notification {
+    string id = 1;
+    string type = 2; // type of the notification (e.g. "reservation_created", "reservation_cancled", etc.)
+    string resource_id = 3; // id of the resource that the notification is about
+    string body = 4; // short description
+    string user_id = 5;
+    bool is_read = 6;
+    string created_at = 7;
+}
+
+message SendNotificationRequest {
+    string type = 1;
+    string resource_id = 2;
+    string body = 3;
+    string user_id = 4;
+}
+
+message SendNotificationResponse {
+    bool success = 1;
+}
+
+message GetNotificationRequest {
+    string user_id = 1;
+    bool all = 2;
+}
+
+message GetNotificationResponse {
+    repeated Notification notifications = 1;
+}
+
+message MarkNotificationAsReadRequest {
+    string user_id = 1;
+    string id = 2;
+}
+
+message MarkNotificationAsReadResponse {
+    bool success = 1;
+}
+
+message NotificationSetting {
+    string type = 1;
+    bool enabled = 2;
+}
+
+message ChangeNotifcationSettingsRequest {
+    string user_id = 1;
+    repeated NotificationSetting settings = 2;
+}
+
+message ChangeNotifcationSettingsResponse {
+    bool success = 1;
+}
+
+message GetNotificationSettingsRequest {
+    string user_id = 1;
+}
+
+message GetNotificationSettingsResponse {
+    repeated NotificationSetting settings = 1;
+}

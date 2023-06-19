@@ -1,6 +1,8 @@
 package reservation
 
 import (
+	"fmt"
+
 	"api.accommodation.com/pb"
 	"api.accommodation.com/src/client"
 	"api.accommodation.com/src/helper"
@@ -65,6 +67,19 @@ func CreateReservationHandler(ctx *gin.Context, clients *client.Clients) {
 			return
 		}
 	}
+
+	// Send notification to host
+	notificationMsg := "New reservation created for your accommodation " + accommodation.Accommodation.Name +
+		" in period " + request.StartDate + " - " + request.EndDate +
+		". Number of guests: " + string(request.NumberOfGuests) + " and price: " + fmt.Sprintf("%f", request.Price) + "$" + "."
+
+	helper.SendNotification(ctx, clients, &helper.Notification{
+		Type:       helper.ReservationCreated,
+		ResourceId: reservation.Id,
+		Body:       notificationMsg,
+		UserId:     notificationMsg,
+	})
+	// Send notification to user
 
 	ctx.JSON(200, reservation)
 

@@ -16,6 +16,8 @@ type Connections struct {
 	authConn *grpc.ClientConn
 	accConn  *grpc.ClientConn
 	resConn  *grpc.ClientConn
+	retConn  *grpc.ClientConn
+	notConn  *grpc.ClientConn
 
 	NC *nats.Conn
 }
@@ -24,6 +26,8 @@ func (c *Connections) Close() {
 	c.authConn.Close()
 	c.accConn.Close()
 	c.resConn.Close()
+	c.retConn.Close()
+	c.notConn.Close()
 	c.NC.Close()
 }
 
@@ -34,6 +38,7 @@ type Clients struct {
 	AccommodationClient pb.AccommodationServiceClient
 	ReservationClient   pb.ReservationServiceClient
 	RatingClient        pb.RatingServiceClient
+	NotificationClient  pb.NotificationServiceClient
 }
 
 func InitClients(cfg *config.Config) *Clients {
@@ -71,18 +76,27 @@ func InitClients(cfg *config.Config) *Clients {
 		panic(err)
 	}
 
+	notConn, err := grpc.DialContext(ctx, cfg.NotAddress, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Println("Can't connect to notification servise")
+		panic(err)
+	}
+
 	log.Println("Connected to servises")
 	return &Clients{
 		Connections: &Connections{
 			authConn: authConn,
 			accConn:  accConn,
 			resConn:  resConn,
+			retConn:  retConn,
+			notConn:  notConn,
 			NC:       nc,
 		},
 		AuthClient:          AuthGRPCClient(authConn),
 		AccommodationClient: AccommodationGRPCClient(accConn),
 		ReservationClient:   ReservationGRPCClient(resConn),
 		RatingClient:        RatingGRPCClient(retConn),
+		NotificationClient:  NotificationGRPCClient(notConn),
 	}
 }
 

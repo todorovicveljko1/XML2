@@ -6,6 +6,7 @@ import (
 	"api.accommodation.com/src/client"
 	"api.accommodation.com/src/handler/accommodation"
 	"api.accommodation.com/src/handler/auth"
+	"api.accommodation.com/src/handler/notification"
 	"api.accommodation.com/src/handler/rating"
 	"api.accommodation.com/src/handler/reservation"
 	"api.accommodation.com/src/middleware"
@@ -64,6 +65,23 @@ func ApiRouter(r *gin.RouterGroup, clients *client.Clients) {
 	authGroup.PUT("/accommodation/:id/reservation/:reservation_id", func(ctx *gin.Context) {
 		reservation.HandleReservationStatusChange(ctx, clients)
 	})
+
+	authGroup.GET("/notification", func(ctx *gin.Context) {
+		notification.GetNotificationHandler(ctx, clients)
+	})
+
+	authGroup.PUT("/notification/settings", func(ctx *gin.Context) {
+		notification.ModifyNotificationSettingsHandler(ctx, clients)
+	})
+
+	authGroup.GET("/notification/settings", func(ctx *gin.Context) {
+		notification.GetNotificationSettingsHandler(ctx, clients)
+	})
+
+	authGroup.GET("/notification/:id/read", func(ctx *gin.Context) {
+		notification.MarkAsReadHandler(ctx, clients)
+	})
+
 	// ----------------- HOST ROUTES -----------------
 	hostGroup := authGroup.Group("/")
 	hostGroup.Use(middleware.HasRole([]string{"H"}))

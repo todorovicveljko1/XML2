@@ -9,6 +9,7 @@ type Config struct {
 	ResAddress  string
 	NatsAddress string
 	RetAddress  string
+	NotAddress  string
 	Production  bool
 }
 
@@ -28,6 +29,7 @@ func GetConfig() Config {
 		ResAddress:  getOsValueOrDefault("RESERVATION_ADDRESS", "localhost:8003"),
 		RetAddress:  getOsValueOrDefault("RATING_ADDRESS", "localhost:8004"),
 		NatsAddress: getOsValueOrDefault("NATS_ADDRESS", "localhost:4222"),
+		NotAddress:  getOsValueOrDefault("NOTIFICATION_ADDRESS", "localhost:8005"),
 		Production:  getOsValueOrDefault("PRODUCTION", "false") == "true",
 	}
 }

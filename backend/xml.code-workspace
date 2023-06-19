@@ -17,6 +17,9 @@
 		},
 		{
 			"path": "services/rating"
+		},
+		{
+			"path": "services/notification"
 		}
 	],
 	"settings": {}

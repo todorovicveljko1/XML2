@@ -50,7 +50,7 @@ func ModifyRatingHandler(ctx *gin.Context, clients *client.Clients) {
 	}
 
 	// rate host
-	_, err = clients.RatingClient.Rate(ctx, &pb.RateRequest{
+	res, err := clients.RatingClient.Rate(ctx, &pb.RateRequest{
 		ReservationId:       reservationId,
 		HostId:              accommodation.Accommodation.UserId,
 		AccommodationId:     accommodation.Accommodation.Id,
@@ -63,6 +63,21 @@ func ModifyRatingHandler(ctx *gin.Context, clients *client.Clients) {
 		helper.PrettyGRPCError(ctx, err)
 		return
 	}
+
+	notificationMsg := "User rated your accommodation " + accommodation.Accommodation.Name
+	if res.Updated {
+		notificationMsg = "User updated rating for your accommodation " + accommodation.Accommodation.Name
+	}
+
+	notificationMsg += " with " + string(request.AccommodationRating) + " stars" + " and you with " + string(request.HostRating) + " stars"
+
+	// send notification to host
+	helper.SendNotification(ctx, clients, &helper.Notification{
+		Type:       helper.RatingModified,
+		ResourceId: accommodation.Accommodation.Id,
+		UserId:     accommodation.Accommodation.UserId,
+		Body:       notificationMsg,
+	})
 
 	ctx.JSON(200, gin.H{"message": "Rating successful added"})
 
