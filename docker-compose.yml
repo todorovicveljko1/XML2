@@ -15,6 +15,12 @@ services:
     image: mongo
     ports:
       - "27017:27017"
+
+  nats:
+    image: nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
   
   # services
 
@@ -26,8 +32,10 @@ services:
       AUTH_ADDRESS : ":8000"
       MONGODB_URI : "mongodb://db:27017/"
       SECRET: "secret"
+      NATS_ADDRESS: "nats://nats:4222"
     depends_on:
       - db
+      - nats
 
   accommodation:
     build:
@@ -36,8 +44,10 @@ services:
     environment:
       ACCOMMODATION_ADDRESS: ":8000"
       MONGODB_URI: "mongodb://db:27017/"
+      NATS_ADDRESS: "nats://nats:4222"
     depends_on:
       - db
+      - nats
   
   reservation:
     build:
@@ -45,6 +55,28 @@ services:
       target: production
     environment:
       RESERVATION_ADDRESS: ":8000"
+      MONGODB_URI: "mongodb://db:27017/"
+      NATS_ADDRESS: "nats://nats:4222"
+    depends_on:
+      - db
+      - nats
+
+  rating:
+    build:
+      context: ./backend/services/rating
+      target: production
+    environment:
+      RATING_ADDRESS: ":8000"
+      MONGODB_URI: "mongodb://db:27017/"
+    depends_on:
+      - db
+
+  notification:
+    build:
+      context: ./backend/services/notification
+      target: production
+    environment:
+      NOTIFICATION_ADDRESS: ":8000"
       MONGODB_URI: "mongodb://db:27017/"
     depends_on:
       - db
@@ -62,10 +94,16 @@ services:
       ACCOMMODATION_ADDRESS: "accommodation:8000"
       RESERVATION_ADDRESS: "reservation:8000"
       RATING_ADDRESS: "rating:8000"
+      NOTIFICATION_ADDRESS: "notification:8000"
+      NATS_ADDRESS: "nats://nats:4222"
+      PRODUCTION: "true"
 
     depends_on:
       - auth
       - accommodation
       - reservation
+      - rating
+      - notification
+      - nats
 
   
