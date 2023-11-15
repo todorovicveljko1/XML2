@@ -1,0 +1,83 @@
+syntax = "proto3";
+option go_package = "./pb";
+
+message Reservation{
+    string id = 1;
+    string user_id = 2;
+    string host_id = 3;
+    string accommodation_id = 4;
+    string start_date = 5;
+    string end_date = 6;
+    double price = 7;
+    int32 number_of_guests = 8;
+    string status = 9;
+}
+
+service ReservationService{
+    rpc GetReservation(GetReservationRequest) returns (Reservation);
+    rpc CreateReservation(CreateReservationRequest) returns (Reservation);
+    rpc ApproveReservation(GetReservationRequest) returns (ReservationStatus);
+    rpc RejectReservation(GetReservationRequest) returns (ReservationStatus);
+    rpc CancelReservation(GetReservationRequest) returns (ReservationStatus);
+    
+    rpc GetReservationsForGuest(IdRequest) returns (ReservationList);
+    rpc GetReservationsForAccommodation(IdRequest) returns (ReservationList);
+
+    rpc FilterOutTakenAccommodations(FilterTakenAccommodationsRequest) returns (IdList);
+    rpc HasActiveReservationInInterval(IntervalRequest) returns (BoolResponse);
+
+    rpc HasGuestActiveReservationInFuture(IdRequest) returns (BoolResponse);
+    rpc HasHostActiveReservationInFuture(IdList) returns (BoolResponse);
+
+    rpc CheckForSuperHost(IdRequest) returns (BoolResponse);
+    rpc GetHostIdsForSuperHost(IdList) returns (IdList);
+
+
+}
+
+message GetReservationRequest{
+    string reservation_id = 1;
+}
+
+message CreateReservationRequest{
+    string user_id = 1;
+    string host_id = 2;
+    string accommodation_id = 3;
+    string start_date = 4;
+    string end_date = 5;
+    double price = 6;
+    int32 number_of_guests = 7;
+}
+
+message ReservationStatus{
+    string status = 1;
+}
+
+
+message ReservationList{
+    repeated Reservation reservations = 1;
+}
+
+message IdRequest{
+    string id = 1;
+}
+
+message IdList{
+    repeated string ids = 1;
+}
+
+message FilterTakenAccommodationsRequest{
+    repeated string accommodation_ids = 1;
+    string start_date = 2;
+    string end_date = 3;
+}
+
+message IntervalRequest{
+    string accommodation_id = 2;
+    string start_date = 3;
+    string end_date = 4;
+}
+
+message BoolResponse{
+    bool value = 1;
+}

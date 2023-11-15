@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "api_gateway"
+		},
+		{
+			"path": "services/accommodation"
+		},
+		{
+			"path": "services/auth"
+		},
+		{
+			"path": "proto"
+		},
+		{
+			"path": "services/reservation"
+		},
+		{
+			"path": "services/rating"
+		},
+		{
+			"path": "services/notification"
+		}
+	],
+	"settings": {}
+}

@@ -1,0 +1,110 @@
+version: '3'
+services:
+  ui:
+    build:
+      context: frontend
+      target: runner
+    ports:
+      - "3000:3000"
+    environment:
+      API_URL: "http://api:8000/api/v1"
+    depends_on:
+      - api
+
+  db:
+    image: mongo
+    command: mongod --quiet --logpath /dev/null 
+    ports:
+      - "27017:27017"
+
+  nats:
+    image: nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+  
+  # services
+
+  auth:
+    build:
+      context: ./backend/services/auth
+      target: production
+    environment:
+      AUTH_ADDRESS : ":8000"
+      MONGODB_URI : "mongodb://db:27017/"
+      SECRET: "secret"
+      NATS_ADDRESS: "nats://nats:4222"
+    depends_on:
+      - db
+      - nats
+
+  accommodation:
+    build:
+      context: ./backend/services/accommodation
+      target: production
+    environment:
+      ACCOMMODATION_ADDRESS: ":8000"
+      MONGODB_URI: "mongodb://db:27017/"
+      NATS_ADDRESS: "nats://nats:4222"
+    depends_on:
+      - db
+      - nats
+  
+  reservation:
+    build:
+      context: ./backend/services/reservation
+      target: production
+    environment:
+      RESERVATION_ADDRESS: ":8000"
+      MONGODB_URI: "mongodb://db:27017/"
+      NATS_ADDRESS: "nats://nats:4222"
+    depends_on:
+      - db
+      - nats
+
+  rating:
+    build:
+      context: ./backend/services/rating
+      target: production
+    environment:
+      RATING_ADDRESS: ":8000"
+      MONGODB_URI: "mongodb://db:27017/"
+    depends_on:
+      - db
+
+  notification:
+    build:
+      context: ./backend/services/notification
+      target: production
+    environment:
+      NOTIFICATION_ADDRESS: ":8000"
+      MONGODB_URI: "mongodb://db:27017/"
+    depends_on:
+      - db
+  
+
+  api:
+    build:
+      context: ./backend/api_gateway
+      target: production
+    ports:
+      - "8000:8000"
+    environment:
+      API_ADDRESS: ":8000"
+      AUTH_ADDRESS : "auth:8000"
+      ACCOMMODATION_ADDRESS: "accommodation:8000"
+      RESERVATION_ADDRESS: "reservation:8000"
+      RATING_ADDRESS: "rating:8000"
+      NOTIFICATION_ADDRESS: "notification:8000"
+      NATS_ADDRESS: "nats://nats:4222"
+      PRODUCTION: "true"
+
+    depends_on:
+      - auth
+      - accommodation
+      - reservation
+      - rating
+      - notification
+      - nats
+
+  

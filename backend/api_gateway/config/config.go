@@ -6,6 +6,11 @@ type Config struct {
 	Address     string
 	AuthAddress string
 	AccAddress  string
+	ResAddress  string
+	NatsAddress string
+	RetAddress  string
+	NotAddress  string
+	Production  bool
 }
 
 func getOsValueOrDefault(key string, defaultValue string) string {
@@ -20,6 +25,11 @@ func GetConfig() Config {
 	return Config{
 		Address:     getOsValueOrDefault("API_ADDRESS", "localhost:8000"),
 		AuthAddress: getOsValueOrDefault("AUTH_ADDRESS", "localhost:8001"),
-		AccAddress:  getOsValueOrDefault("ACC_ADDRESS", "localhost:8002"),
+		AccAddress:  getOsValueOrDefault("ACCOMMODATION_ADDRESS", "localhost:8002"),
+		ResAddress:  getOsValueOrDefault("RESERVATION_ADDRESS", "localhost:8003"),
+		RetAddress:  getOsValueOrDefault("RATING_ADDRESS", "localhost:8004"),
+		NatsAddress: getOsValueOrDefault("NATS_ADDRESS", "localhost:4222"),
+		NotAddress:  getOsValueOrDefault("NOTIFICATION_ADDRESS", "localhost:8005"),
+		Production:  getOsValueOrDefault("PRODUCTION", "false") == "true",
 	}
 }

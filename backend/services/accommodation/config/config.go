@@ -3,8 +3,9 @@ package config
 import "os"
 
 type Config struct {
-	Address    string
-	MongoDBURI string
+	Address     string
+	MongoDBURI  string
+	NatsAddress string
 }
 
 func getOsValueOrDefault(key string, defaultValue string) string {
@@ -17,7 +18,8 @@ func getOsValueOrDefault(key string, defaultValue string) string {
 
 func GetConfig() Config {
 	return Config{
-		Address:    getOsValueOrDefault("ACCOMMODATION_ADDRESS", "localhost:8002"),
-		MongoDBURI: getOsValueOrDefault("MONGODB_URI", "mongodb://localhost:27017/"),
+		Address:     getOsValueOrDefault("ACCOMMODATION_ADDRESS", "localhost:8002"),
+		MongoDBURI:  getOsValueOrDefault("MONGODB_URI", "mongodb://localhost:27017/"),
+		NatsAddress: getOsValueOrDefault("NATS_ADDRESS", "nats://localhost:4222"),
 	}
 }

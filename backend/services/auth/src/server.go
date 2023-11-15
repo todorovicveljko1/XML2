@@ -10,6 +10,7 @@ import (
 	"auth.accommodation.com/src/db"
 	"auth.accommodation.com/src/helper"
 	"auth.accommodation.com/src/model"
+	"auth.accommodation.com/src/saga"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -26,6 +27,8 @@ type Server struct {
 	user_collection *mongo.Collection
 
 	dbClient *mongo.Client
+
+	SAGA *saga.SAGA
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
@@ -33,10 +36,16 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	user_collection := client.Database("accommodation_auth").Collection("users")
 
-	return &Server{cfg: cfg, dbClient: client, user_collection: user_collection}, nil
+	saga, err := saga.CreateSAGA(*cfg, user_collection)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Server{cfg: cfg, dbClient: client, user_collection: user_collection, SAGA: saga}, nil
 }
 
 func (s *Server) Stop() {
+	s.SAGA.Close()
 	if err := s.dbClient.Disconnect(context.Background()); err != nil {
 		panic(err)
 	}
@@ -55,6 +64,10 @@ func (s *Server) Login(parent context.Context, dto *pb.LoginRequest) (*pb.LoginR
 			return nil, status.Error(codes.Unauthenticated, "Bad Credentials")
 		}
 		return nil, status.Error(codes.Internal, "Error while fetching user")
+	}
+	// Check if user is deleted
+	if user.DeletedAt != nil {
+		return nil, status.Error(codes.Unauthenticated, "Bad Credentials")
 	}
 	//Check if passwords are same
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.Password))
@@ -77,7 +90,6 @@ func (s *Server) Register(parent context.Context, dto *pb.RegisterRequest) (*pb.
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error while hashing password")
 	}
-
 
 	user := model.User{
 		Id:            primitive.NewObjectID(),
@@ -126,6 +138,10 @@ func (s *Server) AuthUser(parent context.Context, dto *pb.AuthUserRequest) (*pb.
 		}
 		return nil, status.Error(codes.Internal, "Error while fetching user")
 	}
+	// Check if user is deleted
+	if user.DeletedAt != nil {
+		return nil, status.Error(codes.Unauthenticated, "User is deleted")
+	}
 
 	return user.ConvertToPbUser(), nil
 }
@@ -150,4 +166,89 @@ func (s *Server) GetUser(parent context.Context, dto *pb.GetUserRequest) (*pb.Us
 	}
 
 	return user.ConvertToPbUser(), nil
+}
+
+func (s *Server) DeleteUser(parent context.Context, dto *pb.GetUserRequest) (*pb.Status, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	userId, err := primitive.ObjectIDFromHex(dto.Id)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while fetching user")
+	}
+
+	_, err = s.user_collection.DeleteOne(ctx, bson.M{"_id": userId})
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while deleting user")
+	}
+
+	return &pb.Status{Status: "SUCCESS"}, nil
+}
+func (s *Server) UpdateUser(parent context.Context, dto *pb.User) (*pb.User, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	userId, err := primitive.ObjectIDFromHex(dto.Id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while fetching user")
+	}
+
+	_, err = s.user_collection.UpdateOne(ctx, bson.M{"_id": userId}, bson.M{"$set": bson.M{
+		"username":        dto.Username,
+		"first_name":      dto.FirstName,
+		"last_name":       dto.LastName,
+		"email":           dto.Email,
+		"place_of_living": dto.PlaceOfLiving,
+	}})
+
+	if err != nil {
+		if db.IsDup(err) {
+			return nil, status.Error(codes.AlreadyExists, "User with that username or email already exists")
+		}
+		return nil, status.Error(codes.Internal, "Error while updating user")
+	}
+
+	return dto, nil
+
+}
+func (s *Server) ChangePassword(parent context.Context, dto *pb.ChangePasswordRequest) (*pb.Status, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	userId, err := primitive.ObjectIDFromHex(dto.Id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while fetching user")
+	}
+
+	var user model.User
+	err = s.user_collection.FindOne(ctx, bson.M{"_id": userId}).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, status.Error(codes.NotFound, "User not found")
+		}
+		return nil, status.Error(codes.Internal, "Error while fetching user")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.OldPassword))
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "Bad Credentials")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(dto.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while hashing password")
+	}
+
+	_, err = s.user_collection.UpdateOne(ctx, bson.M{"_id": userId}, bson.M{"$set": bson.M{
+
+		"password": string(hashedPassword),
+	}})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error while updating user")
+	}
+
+	return &pb.Status{Status: "SUCCESS"}, nil
+
 }

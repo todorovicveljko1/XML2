@@ -1,0 +1,58 @@
+syntax = "proto3";
+option go_package = "./pb";
+
+service RatingService {
+    // Host rating
+    rpc HostRating (RatingIdRequest) returns (RatingResponse) {}
+    // Accommodation rating
+    rpc AccommodationRating (RatingIdRequest) returns (RatingResponse) {}
+
+    // Rating requests
+    rpc Rate (RateRequest) returns (RateResponse) {}
+    rpc RemoveRating (RemoveRatingRequest) returns (RemoveRatingResponse) {}
+    rpc GetMyRatings (RatingIdRequest) returns (RatingList) {}
+}
+
+message Rating{
+    string id = 1;
+    string reservation_id = 2;
+    string host_id = 3;
+    string accommodation_id = 4;
+    string user_id = 5;
+    int32 host_rating = 6;
+    int32 accommodation_rating = 7;
+}
+
+message RatingList{
+    repeated Rating ratings = 1;
+}
+
+message RatingIdRequest {
+    string id = 1; // host_id or accommodation_id or user_id
+}
+
+message RatingResponse {
+    double rating = 1;
+}
+
+message RateRequest {
+    string reservation_id = 1;
+    string host_id = 2;
+    string accommodation_id = 3;
+    string user_id = 4;
+    int32 host_rating = 5;
+    int32 accommodation_rating = 6;
+}
+
+message RateResponse {
+    bool updated = 1;
+}
+
+message RemoveRatingRequest {
+    string id = 1;
+    string user_id = 2;
+}
+
+message RemoveRatingResponse {
+    bool removed = 1;
+}
